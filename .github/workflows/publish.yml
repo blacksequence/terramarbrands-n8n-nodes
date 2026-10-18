@@ -80,6 +80,9 @@ jobs:
         with:
           node-version: 'lts/*'
           cache: 'npm'
+          # Required for npm Trusted Publishing (OIDC) — the n8n-node release
+          # help lists registry-url as part of the provenance publishing setup.
+          registry-url: 'https://registry.npmjs.org/'
 
       - name: Install dependencies
         run: 'npm ci'
