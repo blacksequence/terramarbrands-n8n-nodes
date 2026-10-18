@@ -11,7 +11,7 @@ export class TerramarBrandsApi implements ICredentialType {
 
 	displayName = 'Terramar Brands API';
 
-	documentationUrl = 'https://github.com/yokharian/terramarbrands-n8n-nodes#credentials';
+	documentationUrl = 'https://github.com/blacksequence/terramarbrands-n8n-nodes#credentials';
 
 	icon: Icon = {
 		light: 'file:terramarbrands.svg',

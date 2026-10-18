@@ -48,7 +48,7 @@ const SPEC_PATH =
 		? process.argv[specArgIndex + 1]
 		: path.join(ROOT, '..', 'terramarbrands-openapi', 'openapi.json');
 
-const REPO_URL = 'https://github.com/yokharian/terramarbrands-n8n-nodes';
+const REPO_URL = 'https://github.com/blacksequence/terramarbrands-n8n-nodes';
 const CREDENTIAL_NAME = 'terramarBrandsApi';
 const CREDENTIAL_CLASS = 'TerramarBrandsApi';
 // Side-effect-free, parameter-free protected GET — used as the credential test.

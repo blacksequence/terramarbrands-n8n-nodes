@@ -8,12 +8,12 @@
 	"resources": {
 		"credentialDocumentation": [
 			{
-				"url": "https://github.com/yokharian/terramarbrands-n8n-nodes#credentials"
+				"url": "https://github.com/blacksequence/terramarbrands-n8n-nodes#credentials"
 			}
 		],
 		"primaryDocumentation": [
 			{
-				"url": "https://github.com/yokharian/terramarbrands-n8n-nodes#readme"
+				"url": "https://github.com/blacksequence/terramarbrands-n8n-nodes#readme"
 			}
 		]
 	}
