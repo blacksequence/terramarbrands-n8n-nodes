@@ -1,0 +1,20 @@
+{
+	"node": "n8n-nodes-terramarbrands",
+	"nodeVersion": "1.0",
+	"codexVersion": "1.0",
+	"categories": [
+		"Finance & Accounting"
+	],
+	"resources": {
+		"credentialDocumentation": [
+			{
+				"url": "https://github.com/yokharian/terramarbrands-n8n-nodes#credentials"
+			}
+		],
+		"primaryDocumentation": [
+			{
+				"url": "https://github.com/yokharian/terramarbrands-n8n-nodes#readme"
+			}
+		]
+	}
+}
