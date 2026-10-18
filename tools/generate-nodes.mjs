@@ -53,6 +53,8 @@ const CREDENTIAL_NAME = 'terramarBrandsApi';
 const CREDENTIAL_CLASS = 'TerramarBrandsApi';
 // Side-effect-free, parameter-free protected GET — used as the credential test.
 const CREDENTIAL_TEST_URL = 'https://terramarbrands.mx/wsTerramarV2/Service1.svc/GetBonosEtapaUno';
+// SPA login endpoint used by the credential's automatic token flow.
+const CREDENTIAL_LOGIN_URL = 'https://terramarbrands.mx/wsTerramarV2/Service1.svc/getConsultoriaLogin';
 
 const spec = JSON.parse(readFileSync(SPEC_PATH, 'utf8'));
 const SERVER_URL = spec.servers?.[0]?.url;
@@ -209,6 +211,7 @@ const FIELD_DEFAULTS = {
 	'listCartProducts.accion': 'desplegar',
 	'getBranchStatus.opcion': 'PREBRANCH',
 	dominio: 'carrito.terramarbrands.com.mx',
+	origen: 'CARRITONUE',
 };
 
 // Spec operations that combine read+update in one endpoint, split into two
@@ -419,11 +422,24 @@ const collectOps = () => {
 
 const CREDENTIAL_TS = `import type {
 	IAuthenticateGeneric,
+	ICredentialDataDecryptedObject,
 	ICredentialTestRequest,
 	ICredentialType,
 	Icon,
+	IDataObject,
+	IHttpRequestHelper,
 	INodeProperties,
 } from 'n8n-workflow';
+
+interface TerramarBrandsLoginResponse {
+	usuario?: string;
+	nivel?: string;
+	nombre?: string;
+	token?: string;
+	tokenJWT?: string;
+	tipoMensaje?: string;
+	mensaje?: string;
+}
 
 export class ${CREDENTIAL_CLASS} implements ICredentialType {
 	name = '${CREDENTIAL_NAME}';
@@ -446,6 +462,41 @@ export class ${CREDENTIAL_CLASS} implements ICredentialType {
 		},
 	};
 
+	/**
+	 * User/password mode: run the consultant login (POST /getConsultoriaLogin,
+	 * header seccion=CONSULTORIA, body origen=CARRITONUE) once per credential
+	 * session and merge the returned token so every authenticated operation
+	 * rides on it. Token mode (token filled) skips the login entirely.
+	 */
+	preAuthentication = async function (
+		this: IHttpRequestHelper,
+		credentials: ICredentialDataDecryptedObject,
+	): Promise<IDataObject> {
+		if (credentials.token) {
+			return {};
+		}
+		const response = (await this.httpRequest({
+			method: 'POST',
+			url: '${CREDENTIAL_LOGIN_URL}',
+			headers: {
+				seccion: 'CONSULTORIA',
+			},
+			body: {
+				usuario: credentials.usuario,
+				claveAcceso: credentials.claveAcceso,
+				origen: credentials.origen ?? 'CARRITONUE',
+			},
+			json: true,
+		})) as TerramarBrandsLoginResponse;
+		if (response?.tipoMensaje !== 'exito' || !response.token) {
+			throw new Error(
+				'Terramar Brands login failed: ' +
+					(response?.mensaje ?? response?.tipoMensaje ?? 'unknown error'),
+			);
+		}
+		return { token: response.token };
+	};
+
 	test: ICredentialTestRequest = {
 		request: {
 			method: 'GET',
@@ -455,16 +506,46 @@ export class ${CREDENTIAL_CLASS} implements ICredentialType {
 
 	properties: INodeProperties[] = [
 		{
+			displayName: 'Usuario',
+			name: 'usuario',
+			required: false,
+			type: 'string',
+			default: '',
+			placeholder: 'TE1234567',
+			description:
+				'Consultant user (TE + 7 digits) for the automatic login flow. Fill this and the password to let the nodes obtain the session token themselves on every execution.',
+		},
+		{
+			displayName: 'Contraseña',
+			name: 'claveAcceso',
+			required: false,
+			type: 'string',
+			typeOptions: {
+				password: true,
+			},
+			default: '',
+			description: 'Consultant password (claveAcceso) for the automatic login flow.',
+		},
+		{
+			displayName: 'Origen',
+			name: 'origen',
+			required: false,
+			type: 'string',
+			default: 'CARRITONUE',
+			description:
+				'Fixed origin identifier the cart SPA sends with the login (app channel). Keep CARRITONUE unless the backend requires another channel.',
+		},
+		{
 			displayName: 'Token',
 			name: 'token',
-			required: true,
+			required: false,
 			type: 'string',
 			typeOptions: {
 				password: true,
 			},
 			default: '',
 			description:
-				'Terramar Brands API bearer token — obtain it with the Terramar Brands Session node → Login operation (POST /getConsultoriaLogin), or copy the TMBcartToken cookie from the Terramar Brands SPA. The connection test performs a read-only GET /GetBonosEtapaUno against the production endpoint.',
+				'Session token for token mode — skips the automatic login. Obtain it with the Terramar Brands Session node → Login operation, or copy the TMBcartToken cookie from the SPA. Leave empty to use Usuario + Contraseña.',
 		},
 	];
 }

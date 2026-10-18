@@ -316,7 +316,7 @@ export class TerramarBrandsCart implements INodeType {
 						operation: ['listWarehouses'],
 					},
 				},
-				default: '',
+				default: 'CARRITONUE',
 			},
 			{
 				displayName: 'Accion',
@@ -385,7 +385,7 @@ export class TerramarBrandsCart implements INodeType {
 						operation: ['listCartCategories'],
 					},
 				},
-				default: '',
+				default: 'CARRITONUE',
 			},
 			{
 				displayName: 'Idioma',
@@ -676,7 +676,7 @@ export class TerramarBrandsCart implements INodeType {
 						operation: ['addToCart'],
 					},
 				},
-				default: '',
+				default: 'CARRITONUE',
 			},
 			{
 				displayName: 'Folio Pedido',

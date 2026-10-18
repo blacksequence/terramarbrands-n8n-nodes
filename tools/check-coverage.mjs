@@ -66,6 +66,7 @@ const FIXED_DEFAULTS = {
 	'listCartProducts.accion': 'desplegar',
 	'getBranchStatus.opcion': 'PREBRANCH',
 	dominio: 'carrito.terramarbrands.com.mx',
+	origen: 'CARRITONUE',
 };
 const SPLIT_ACCION_DEFAULTS = {
 	readConsultantProfile: 'CONTINUAR',
@@ -117,6 +118,39 @@ for (const f of [...(pkg.n8n?.nodes ?? []), ...(pkg.n8n?.credentials ?? [])]) {
 
 // ---- every built node against the spec + default/expression rules ----
 const require = createRequire(path.join(ROOT, 'package.json'));
+
+// ---- credential: two modes (user/password auto-login via preAuthentication, or token) ----
+const credDist = path.join(ROOT, 'dist', 'credentials', 'TerramarBrandsApi.credentials.js');
+ok(existsSync(credDist), 'credential build missing: dist/credentials/TerramarBrandsApi.credentials.js');
+if (existsSync(credDist)) {
+	const credMod = require(credDist);
+	const credClass = credMod.TerramarBrandsApi ?? credMod.default?.TerramarBrandsApi;
+	ok(typeof credClass === 'function', 'TerramarBrandsApi: not exported from the build');
+	if (typeof credClass === 'function') {
+		const cred = new credClass();
+		ok(
+			cred.name === 'terramarBrandsApi',
+			`credential name "${cred.name}" !== "terramarBrandsApi"`,
+		);
+		ok(
+			typeof cred.preAuthentication === 'function',
+			'credential: preAuthentication (automatic login) missing',
+		);
+		ok(!!cred.authenticate, 'credential: authenticate missing');
+		ok(!!cred.test?.request, 'credential: connection test missing');
+		const credFields = Object.fromEntries((cred.properties ?? []).map((p) => [p.name, p]));
+		for (const expected of ['usuario', 'claveAcceso', 'origen', 'token']) {
+			ok(!!credFields[expected], `credential: field ${expected} missing`);
+		}
+		if (credFields.origen) {
+			ok(
+				credFields.origen.default === FIXED_DEFAULTS.origen,
+				`credential.origen default "${credFields.origen.default}" !== "${FIXED_DEFAULTS.origen}"`,
+			);
+		}
+	}
+}
+
 let coveredOps = 0;
 for (const [tag, { className, name }] of Object.entries(TAG_NODES)) {
 	const distPath = path.join(ROOT, 'dist', 'nodes', className, `${className}.node.js`);
@@ -183,6 +217,9 @@ for (const [tag, { className, name }] of Object.entries(TAG_NODES)) {
 		for (const f of fs) {
 			if (f.name === 'dominio') {
 				checkDefault(opId, 'dominio', FIXED_DEFAULTS.dominio);
+			}
+			if (f.name === 'origen') {
+				checkDefault(opId, 'origen', FIXED_DEFAULTS.origen);
 			}
 			if (!['operation', 'resource'].includes(f.name)) {
 				ok(

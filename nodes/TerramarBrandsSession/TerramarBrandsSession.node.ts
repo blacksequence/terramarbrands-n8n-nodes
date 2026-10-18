@@ -165,7 +165,7 @@ export class TerramarBrandsSession implements INodeType {
 						operation: ['loginConsultora'],
 					},
 				},
-				default: '',
+				default: 'CARRITONUE',
 			},
 			{
 				displayName: 'Usuario',
@@ -204,7 +204,7 @@ export class TerramarBrandsSession implements INodeType {
 						operation: ['getSessionInfo'],
 					},
 				},
-				default: '',
+				default: 'CARRITONUE',
 			},
 			{
 				displayName: 'Reabrir Pedido',
