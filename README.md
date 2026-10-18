@@ -98,7 +98,7 @@ The nodes are generated code — extend the generator rather than hand-editing:
 
 ```bash
 node tools/generate-nodes.mjs --spec /path/to/openapi.json
-npm run lint && npm run build
+npm run lint:fix && npm run build
 node tools/check-coverage.mjs --spec /path/to/openapi.json   # PASS = build matches the spec
 ```
 

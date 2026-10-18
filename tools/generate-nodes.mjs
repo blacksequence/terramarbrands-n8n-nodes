@@ -46,7 +46,7 @@ const specArgIndex = process.argv.indexOf('--spec');
 const SPEC_PATH =
 	specArgIndex > 0
 		? process.argv[specArgIndex + 1]
-		: '../terramarbrands-openapi/openapi.json';
+		: path.join(ROOT, '..', 'terramarbrands-openapi', 'openapi.json');
 
 const REPO_URL = 'https://github.com/yokharian/terramarbrands-n8n-nodes';
 const CREDENTIAL_NAME = 'terramarBrandsApi';

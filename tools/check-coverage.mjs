@@ -26,7 +26,7 @@ const specArg = process.argv.indexOf('--spec');
 const SPEC =
 	specArg > 0
 		? process.argv[specArg + 1]
-		: '../terramarbrands-openapi/openapi.json';
+		: path.join(ROOT, '..', 'terramarbrands-openapi', 'openapi.json');
 
 const spec = JSON.parse(readFileSync(SPEC, 'utf8'));
 const SERVER_URL = spec.servers?.[0]?.url;
