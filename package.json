@@ -1,68 +1,68 @@
 {
-  "name": "n8n-nodes-terramarbrands",
-  "version": "0.1.0",
-  "description": "n8n community nodes for the Terramar Brands API (wsTerramarV2): catalog, cart, orders, profile, awards, lineage, payments and more.",
-  "license": "MIT",
-  "homepage": "https://github.com/blacksequence/terramarbrands-n8n-nodes#readme",
-  "keywords": [
-    "n8n-community-node-package",
-    "n8n",
-    "terramarbrands",
-    "terramar-brands"
-  ],
-  "author": {
-    "name": "yokharian",
-    "email": "yokharian@users.noreply.github.com"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/blacksequence/terramarbrands-n8n-nodes.git"
-  },
-  "scripts": {
-    "build": "n8n-node build",
-    "build:watch": "tsc --watch",
-    "dev": "n8n-node dev",
-    "lint": "n8n-node lint",
-    "lint:fix": "n8n-node lint --fix",
-    "release": "n8n-node release",
-    "prepublishOnly": "n8n-node prerelease"
-  },
-  "files": [
-    "dist"
-  ],
-  "n8n": {
-    "n8nNodesApiVersion": 1,
-    "strict": true,
-    "credentials": [
-      "dist/credentials/TerramarBrandsApi.credentials.js"
-    ],
-    "nodes": [
-      "dist/nodes/TerramarBrandsSession/TerramarBrandsSession.node.js",
-      "dist/nodes/TerramarBrandsCatalog/TerramarBrandsCatalog.node.js",
-      "dist/nodes/TerramarBrandsCart/TerramarBrandsCart.node.js",
-      "dist/nodes/TerramarBrandsProfile/TerramarBrandsProfile.node.js",
-      "dist/nodes/TerramarBrandsAwards/TerramarBrandsAwards.node.js",
-      "dist/nodes/TerramarBrandsOrders/TerramarBrandsOrders.node.js",
-      "dist/nodes/TerramarBrandsLineage/TerramarBrandsLineage.node.js",
-      "dist/nodes/TerramarBrandsSupport/TerramarBrandsSupport.node.js",
-      "dist/nodes/TerramarBrandsTravel/TerramarBrandsTravel.node.js",
-      "dist/nodes/TerramarBrandsCertificates/TerramarBrandsCertificates.node.js",
-      "dist/nodes/TerramarBrandsPayments/TerramarBrandsPayments.node.js",
-      "dist/nodes/TerramarBrandsProduct/TerramarBrandsProduct.node.js"
-    ]
-  },
-  "devDependencies": {
-    "@n8n/node-cli": "*",
-    "eslint": "9.32.0",
-    "prettier": "3.6.2",
-    "release-it": "^21.1.0",
-    "typescript": "5.9.2"
-  },
-  "peerDependencies": {
-    "n8n-workflow": "*"
-  },
-  "publishConfig": {
-    "access": "public",
-    "registry": "https://registry.npmjs.org/"
-  }
+	"name": "n8n-nodes-terramarbrands",
+	"version": "0.2.0",
+	"description": "n8n community nodes for the Terramar Brands API (wsTerramarV2): catalog, cart, orders, profile, awards, lineage, payments and more.",
+	"license": "MIT",
+	"homepage": "https://github.com/blacksequence/terramarbrands-n8n-nodes#readme",
+	"keywords": [
+		"n8n-community-node-package",
+		"n8n",
+		"terramarbrands",
+		"terramar-brands"
+	],
+	"author": {
+		"name": "yokharian",
+		"email": "yokharian@users.noreply.github.com"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/blacksequence/terramarbrands-n8n-nodes.git"
+	},
+	"scripts": {
+		"build": "n8n-node build",
+		"build:watch": "tsc --watch",
+		"dev": "n8n-node dev",
+		"lint": "n8n-node lint",
+		"lint:fix": "n8n-node lint --fix",
+		"release": "n8n-node release",
+		"prepublishOnly": "n8n-node prerelease"
+	},
+	"files": [
+		"dist"
+	],
+	"n8n": {
+		"n8nNodesApiVersion": 1,
+		"strict": true,
+		"credentials": [
+			"dist/credentials/TerramarBrandsApi.credentials.js"
+		],
+		"nodes": [
+			"dist/nodes/TerramarBrandsSession/TerramarBrandsSession.node.js",
+			"dist/nodes/TerramarBrandsCatalog/TerramarBrandsCatalog.node.js",
+			"dist/nodes/TerramarBrandsCart/TerramarBrandsCart.node.js",
+			"dist/nodes/TerramarBrandsProfile/TerramarBrandsProfile.node.js",
+			"dist/nodes/TerramarBrandsAwards/TerramarBrandsAwards.node.js",
+			"dist/nodes/TerramarBrandsOrders/TerramarBrandsOrders.node.js",
+			"dist/nodes/TerramarBrandsLineage/TerramarBrandsLineage.node.js",
+			"dist/nodes/TerramarBrandsSupport/TerramarBrandsSupport.node.js",
+			"dist/nodes/TerramarBrandsTravel/TerramarBrandsTravel.node.js",
+			"dist/nodes/TerramarBrandsCertificates/TerramarBrandsCertificates.node.js",
+			"dist/nodes/TerramarBrandsPayments/TerramarBrandsPayments.node.js",
+			"dist/nodes/TerramarBrandsProduct/TerramarBrandsProduct.node.js"
+		]
+	},
+	"devDependencies": {
+		"@n8n/node-cli": "*",
+		"eslint": "9.32.0",
+		"prettier": "3.6.2",
+		"release-it": "^21.1.0",
+		"typescript": "5.9.2"
+	},
+	"peerDependencies": {
+		"n8n-workflow": "*"
+	},
+	"publishConfig": {
+		"access": "public",
+		"registry": "https://registry.npmjs.org/"
+	}
 }
