@@ -1,0 +1,9 @@
+#!/bin/sh
+# Append the Sisyphus co-author trailer to every commit message (skipped when present).
+# Activate per clone with: git config core.hooksPath .githooks
+trailer='Co-authored-by: Sisyphus <clio-agent@sisyphuslabs.ai>'
+if ! grep -qF "$trailer" "$1" 2>/dev/null; then
+	printf '
+%s
+' "$trailer" >> "$1"
+fi
