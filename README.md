@@ -100,6 +100,7 @@ The nodes are generated code — extend the generator rather than hand-editing:
 node tools/generate-nodes.mjs --spec /path/to/openapi.json
 npm run lint:fix && npm run build
 node tools/check-coverage.mjs --spec /path/to/openapi.json   # PASS = build matches the spec
+node tools/generate-icons.mjs                                    # regenerate the light/dark icon family (assets/icons)
 ```
 
 The generator throws when the spec grows a shape it cannot map (non-string params,

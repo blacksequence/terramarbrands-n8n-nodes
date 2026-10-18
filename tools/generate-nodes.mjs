@@ -839,9 +839,25 @@ const copyIcon = (src, dest) => {
 	cpSync(src, dest);
 };
 
+// Brand icon family (assets/icons, built by tools/generate-icons.mjs) takes
+// precedence over the scaffold clones.
+const brandIconDir = path.join(ROOT, 'assets', 'icons');
+const brandPairFor = (name) => {
+	const light = path.join(brandIconDir, `${name}.svg`);
+	if (!existsSync(light)) return null;
+	const dark = path.join(brandIconDir, `${name}.dark.svg`);
+	return { light, dark: existsSync(dark) ? dark : null };
+};
+
 // --- credential (with its own themed icons) + shared helper ---
 mkdirWrite(`credentials/${CREDENTIAL_CLASS}.credentials.ts`, CREDENTIAL_TS);
-if (iconPair && iconSourceDir) {
+const credentialBrandPair = brandPairFor('terramarbrands');
+if (credentialBrandPair) {
+	copyIcon(credentialBrandPair.light, path.join(ROOT, 'credentials', 'terramarbrands.svg'));
+	if (credentialBrandPair.dark) {
+		copyIcon(credentialBrandPair.dark, path.join(ROOT, 'credentials', 'terramarbrands.dark.svg'));
+	}
+} else if (iconPair && iconSourceDir) {
 	copyIcon(
 		path.join(iconSourceDir, iconPair.light),
 		path.join(ROOT, 'credentials', 'terramarbrands.svg'),
@@ -864,7 +880,15 @@ for (const [tag, config] of Object.entries(TAG_NODES)) {
 	const nodeDir = path.join(ROOT, 'nodes', config.className);
 
 	let icons = null;
-	if (iconPair && iconSourceDir) {
+	const brandPair = brandPairFor(config.className);
+	if (brandPair) {
+		icons = {
+			light: `${config.className}.svg`,
+			dark: brandPair.dark ? `${config.className}.dark.svg` : null,
+		};
+		copyIcon(brandPair.light, path.join(nodeDir, icons.light));
+		if (brandPair.dark) copyIcon(brandPair.dark, path.join(nodeDir, icons.dark));
+	} else if (iconPair && iconSourceDir) {
 		icons = {
 			light: `${config.className}.${iconExt}`,
 			dark: iconPair.dark ? `${config.className}.dark.${iconExt}` : null,
@@ -918,6 +942,10 @@ pkg.keywords = Array.from(
 );
 pkg.n8n.nodes = nodeDistPaths;
 pkg.n8n.credentials = [`dist/credentials/${CREDENTIAL_CLASS}.credentials.js`];
+pkg.publishConfig = {
+	access: 'public',
+	registry: 'https://registry.npmjs.org/',
+};
 writeFileSync(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`);
 console.log('wired package.json: n8n.nodes + n8n.credentials + metadata + keywords');
 
