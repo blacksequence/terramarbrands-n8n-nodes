@@ -53,7 +53,7 @@ export class TerramarBrandsApi implements ICredentialType {
 		if (credentials.token) {
 			return {};
 		}
-		const response = (await this.httpRequest({
+		const response = (await this.helpers.httpRequest({
 			method: 'POST',
 			url: 'https://terramarbrands.mx/wsTerramarV2/Service1.svc/getConsultoriaLogin',
 			headers: {

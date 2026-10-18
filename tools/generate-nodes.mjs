@@ -475,7 +475,7 @@ export class ${CREDENTIAL_CLASS} implements ICredentialType {
 		if (credentials.token) {
 			return {};
 		}
-		const response = (await this.httpRequest({
+		const response = (await this.helpers.httpRequest({
 			method: 'POST',
 			url: '${CREDENTIAL_LOGIN_URL}',
 			headers: {
