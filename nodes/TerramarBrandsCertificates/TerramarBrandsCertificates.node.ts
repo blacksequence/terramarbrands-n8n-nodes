@@ -98,7 +98,7 @@ export class TerramarBrandsCertificates implements INodeType {
 						operation: ['listCertificates'],
 					},
 				},
-				default: '',
+				default: 'carrito.terramarbrands.com.mx',
 			},
 		],
 	};

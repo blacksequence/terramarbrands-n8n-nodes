@@ -175,7 +175,11 @@ const NODE_RESOURCES = {
 		{ name: 'Pedido', value: 'pedido', ops: ['acceptOrder'] },
 	],
 	TerramarBrandsProfile: [
-		{ name: 'Contrato', value: 'contrato', ops: ['getConsultantProfile', 'signContract'] },
+		{
+			name: 'Contrato',
+			value: 'contrato',
+			ops: ['readConsultantProfile', 'updateConsultantProfile', 'signContract'],
+		},
 		{
 			name: 'Domicilio de envío',
 			value: 'domicilio',
@@ -194,6 +198,32 @@ const ENUM_LABELS = {
 		N: 'N — cerrar el pedido anterior',
 	},
 	viaje: { N: 'Nacional', I: 'Internacional' },
+};
+
+// Fixed-value defaults: fields the API expects to be constant ship pre-filled
+// (spec descriptions say "debe ser" / "Fijo"). Qualified keys win over generic
+// ones; everything stays editable, including with n8n expressions.
+const FIELD_DEFAULTS = {
+	seccion: 'CONSULTORIA',
+	'listCartCategories.accion': 'ALMAOK',
+	'listCartProducts.accion': 'desplegar',
+	'getBranchStatus.opcion': 'PREBRANCH',
+	dominio: 'carrito.terramarbrands.com.mx',
+};
+
+// Spec operations that combine read+update in one endpoint, split into two
+// dedicated node operations. Each split carries a default for the
+// distinguishing `accion` field (options, expression-modifiable).
+const SPLIT_ACTIONS = ['CONTINUAR', 'TERMINAR'];
+const SPLIT_OPS = {
+	getConsultantProfile: [
+		{ opId: 'readConsultantProfile', summary: 'Leer datos de la consultora', accion: 'CONTINUAR' },
+		{
+			opId: 'updateConsultantProfile',
+			summary: 'Actualizar datos de la consultora',
+			accion: 'TERMINAR',
+		},
+	],
 };
 
 // ---------------------------------------------------------------------------
@@ -289,6 +319,7 @@ const collectOps = () => {
 			}
 			const entry = {
 				opId,
+				specOpId: opId,
 				method: method.toUpperCase(),
 				path: opPath,
 				summary: op.summary ?? opId,
@@ -352,6 +383,24 @@ const collectOps = () => {
 						description: cleanDescription(prop.description),
 					};
 				}
+			}
+			const splits = SPLIT_OPS[opId];
+			if (splits) {
+				for (const split of splits) {
+					const splitEntry = structuredClone(entry);
+					splitEntry.opId = split.opId;
+					splitEntry.summary = split.summary;
+					const accionMeta = splitEntry.body.accion;
+					if (!accionMeta) {
+						throw new Error(`Split source ${opId} has no body 'accion' field`);
+					}
+					accionMeta.enumValues = SPLIT_ACTIONS.slice();
+					accionMeta.default = split.accion;
+					accionMeta.description =
+						'Acción de la solicitud — CONTINUAR (leer) / TERMINAR (actualizar)';
+					(byTag[tag] ??= []).push(splitEntry);
+				}
+				continue;
 			}
 			(byTag[tag] ??= []).push(entry);
 		}
@@ -523,16 +572,21 @@ const nodeTsFile = (config, ops, icons) => {
 			description,
 			displayOptions: { show },
 		};
+		const fixedDefault =
+			FIELD_DEFAULTS[`${op.specOpId}.${meta.name}`] ??
+			FIELD_DEFAULTS[`${op.specOpId}.${fieldName}`] ??
+			FIELD_DEFAULTS[meta.name] ??
+			FIELD_DEFAULTS[fieldName];
 		if (meta.enumValues) {
 			field.type = 'options';
-			field.default = meta.enumValues[0];
+			field.default = meta.default ?? fixedDefault ?? meta.enumValues[0];
 			field.options = meta.enumValues
 				.map((v) => ({ name: ENUM_LABELS[meta.name]?.[v] ?? v, value: v }))
 				.sort(byName);
 		} else if (type === 'json') {
 			field.default = '[]';
 		} else {
-			field.default = '';
+			field.default = fixedDefault ?? '';
 		}
 		return field;
 	};

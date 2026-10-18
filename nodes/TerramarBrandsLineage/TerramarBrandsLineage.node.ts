@@ -159,7 +159,7 @@ export class TerramarBrandsLineage implements INodeType {
 						operation: ['getBranchStatus'],
 					},
 				},
-				default: '',
+				default: 'PREBRANCH',
 			},
 			{
 				displayName: 'Anio',
@@ -198,7 +198,7 @@ export class TerramarBrandsLineage implements INodeType {
 						operation: ['getBranchStatus'],
 					},
 				},
-				default: '',
+				default: 'carrito.terramarbrands.com.mx',
 			},
 			{
 				displayName: 'Usuario OK',

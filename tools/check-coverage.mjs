@@ -6,9 +6,15 @@
  *   - package.json community-node standards (n8n-nodes- name,
  *     n8n-community-node-package keyword, n8n attribute wiring, built files)
  *   - one node per OpenAPI category, description.name as expected
- *   - every spec operationId appears as an operation option (and no extras)
+ *   - spec operations present as operation options — including the deliberate
+ *     split of combined read+update endpoints (SPLIT) — with no extras
  *   - every node references the termarBrandsApi credential
  *   - every node has an `endpoint` param defaulting to the spec server URL
+ *   - fixed-value defaults ship pre-filled (seccion CONSULTORIA, cart
+ *     accion ALMAOK/desplegar, opcion PREBRANCH, dominio
+ *     carrito.terramarbrands.com.mx, split accion CONTINUAR/TERMINAR)
+ *   - every parameter field stays expression-editable (no noDataExpression
+ *     outside operation/resource)
  *
  * Usage: node tools/check-coverage.mjs [--spec /path/to/openapi.json]
  * Prints PASS and exits 0 when everything matches, FAIL + reasons otherwise.
@@ -34,18 +40,36 @@ if (!SERVER_URL) throw new Error('OpenAPI spec has no servers[0].url');
 
 // tag -> expected node (kept deliberately independent from the generator)
 const TAG_NODES = {
-	Sesión: { className: 'TerramarBrandsSession', name: 'terramarBrandsSession' },
+	'Sesión': { className: 'TerramarBrandsSession', name: 'terramarBrandsSession' },
 	'Catálogo público': { className: 'TerramarBrandsCatalog', name: 'terramarBrandsCatalog' },
-	Carrito: { className: 'TerramarBrandsCart', name: 'terramarBrandsCart' },
+	'Carrito': { className: 'TerramarBrandsCart', name: 'terramarBrandsCart' },
 	'Perfil de consultora': { className: 'TerramarBrandsProfile', name: 'terramarBrandsProfile' },
 	'Premios y bonos': { className: 'TerramarBrandsAwards', name: 'terramarBrandsAwards' },
 	'Pedidos y facturación': { className: 'TerramarBrandsOrders', name: 'terramarBrandsOrders' },
-	Linaje: { className: 'TerramarBrandsLineage', name: 'terramarBrandsLineage' },
-	Atenciones: { className: 'TerramarBrandsSupport', name: 'terramarBrandsSupport' },
-	Viaje: { className: 'TerramarBrandsTravel', name: 'terramarBrandsTravel' },
-	Certificados: { className: 'TerramarBrandsCertificates', name: 'terramarBrandsCertificates' },
-	Pagos: { className: 'TerramarBrandsPayments', name: 'terramarBrandsPayments' },
-	Producto: { className: 'TerramarBrandsProduct', name: 'terramarBrandsProduct' },
+	'Linaje': { className: 'TerramarBrandsLineage', name: 'terramarBrandsLineage' },
+	'Atenciones': { className: 'TerramarBrandsSupport', name: 'terramarBrandsSupport' },
+	'Viaje': { className: 'TerramarBrandsTravel', name: 'terramarBrandsTravel' },
+	'Certificados': { className: 'TerramarBrandsCertificates', name: 'terramarBrandsCertificates' },
+	'Pagos': { className: 'TerramarBrandsPayments', name: 'terramarBrandsPayments' },
+	'Producto': { className: 'TerramarBrandsProduct', name: 'terramarBrandsProduct' },
+};
+
+// Spec operations deliberately split into dedicated read/update node operations.
+const SPLIT = {
+	getConsultantProfile: ['readConsultantProfile', 'updateConsultantProfile'],
+};
+
+// Fixed-value defaults that must ship pre-filled on the generated fields.
+const FIXED_DEFAULTS = {
+	'loginConsultora.seccion': 'CONSULTORIA',
+	'listCartCategories.accion': 'ALMAOK',
+	'listCartProducts.accion': 'desplegar',
+	'getBranchStatus.opcion': 'PREBRANCH',
+	dominio: 'carrito.terramarbrands.com.mx',
+};
+const SPLIT_ACCION_DEFAULTS = {
+	readConsultantProfile: 'CONTINUAR',
+	updateConsultantProfile: 'TERMINAR',
 };
 
 const failures = [];
@@ -64,6 +88,9 @@ for (const [opPath, pathItem] of Object.entries(spec.paths ?? {})) {
 	}
 }
 const allOps = new Set(Object.values(opsByTag).flatMap((s) => [...s]));
+const nodeOpUniverse = new Set([...allOps, ...Object.values(SPLIT).flat()]);
+const expectedOptionCount =
+	allOps.size + Object.values(SPLIT).reduce((acc, splits) => acc + splits.length - 1, 0);
 
 // ---- package.json standards ----
 const pkg = JSON.parse(readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
@@ -88,7 +115,7 @@ for (const f of [...(pkg.n8n?.nodes ?? []), ...(pkg.n8n?.credentials ?? [])]) {
 	ok(existsSync(path.join(ROOT, f)), `built file missing: ${f}`);
 }
 
-// ---- every built node against the spec ----
+// ---- every built node against the spec + default/expression rules ----
 const require = createRequire(path.join(ROOT, 'package.json'));
 let coveredOps = 0;
 for (const [tag, { className, name }] of Object.entries(TAG_NODES)) {
@@ -107,7 +134,7 @@ for (const [tag, { className, name }] of Object.entries(TAG_NODES)) {
 	ok(desc.name === name, `${className}: description.name "${desc.name}" !== "${name}"`);
 	ok(
 		(desc.credentials ?? []).some((c) => c.name === 'terramarBrandsApi'),
-		`${className}: credential termarBrandsApi not referenced`,
+		`${className}: credential teramarBrandsApi not referenced`,
 	);
 	const endpoint = (desc.properties ?? []).find((p) => p.name === 'endpoint');
 	ok(!!endpoint, `${className}: no endpoint param`);
@@ -116,19 +143,96 @@ for (const [tag, { className, name }] of Object.entries(TAG_NODES)) {
 		`${className}: endpoint default "${endpoint?.default}" !== "${SERVER_URL}"`,
 	);
 	const operationFields = (desc.properties ?? []).filter((p) => p.name === 'operation');
-	const values = new Set(operationFields.flatMap((f) => (f.options ?? []).map((o) => o.value)));
+	const values = new Set(
+		operationFields.flatMap((f) => (f.options ?? []).map((o) => o.value)),
+	);
 	const expected = opsByTag[tag] ?? new Set();
-	for (const opId of expected) ok(values.has(opId), `${className}: operation ${opId} missing`);
-	for (const v of values) ok(allOps.has(v), `${className}: unknown operation "${v}"`);
+	for (const opId of expected) {
+		if (SPLIT[opId]) {
+			for (const splitOp of SPLIT[opId]) {
+				ok(values.has(splitOp), `${className}: split operation ${splitOp} missing`);
+			}
+		} else {
+			ok(values.has(opId), `${className}: operation ${opId} missing`);
+		}
+	}
+	for (const v of values) ok(nodeOpUniverse.has(v), `${className}: unknown operation "${v}"`);
 	coveredOps += values.size;
+
+	// fields by operation (displayOptions.show.operation)
+	const fieldsByOp = {};
+	for (const p of desc.properties ?? []) {
+		if (!p.displayOptions?.show?.operation) continue;
+		for (const opv of p.displayOptions.show.operation) {
+			(fieldsByOp[opv] ??= []).push(p);
+		}
+	}
+
+	const checkDefault = (opId, fieldName, want) => {
+		const f = (fieldsByOp[opId] ?? []).find((x) => x.name === fieldName);
+		ok(!!f, `${className}.${opId}: field ${fieldName} missing`);
+		if (f) {
+			ok(
+				f.default === want,
+				`${className}.${opId}.${fieldName} default "${f.default}" !== "${want}"`,
+			);
+		}
+	};
+
+	for (const [opId, fs] of Object.entries(fieldsByOp)) {
+		for (const f of fs) {
+			if (f.name === 'dominio') {
+				checkDefault(opId, 'dominio', FIXED_DEFAULTS.dominio);
+			}
+			if (!['operation', 'resource'].includes(f.name)) {
+				ok(
+					!f.noDataExpression,
+					`${className}.${opId}.${f.name}: noDataExpression set — expressions must stay available`,
+				);
+			}
+		}
+	}
+
+	if (tag === 'Sesión') {
+		checkDefault('loginConsultora', 'seccion', FIXED_DEFAULTS['loginConsultora.seccion']);
+	}
+	if (tag === 'Carrito') {
+		checkDefault('listCartCategories', 'accion', FIXED_DEFAULTS['listCartCategories.accion']);
+		checkDefault('listCartProducts', 'accion', FIXED_DEFAULTS['listCartProducts.accion']);
+	}
+	if (tag === 'Linaje') {
+		checkDefault('getBranchStatus', 'opcion', FIXED_DEFAULTS['getBranchStatus.opcion']);
+	}
+	if (tag === 'Perfil de consultora') {
+		for (const [opId, accionDefault] of Object.entries(SPLIT_ACCION_DEFAULTS)) {
+			ok((fieldsByOp[opId] ?? []).length > 0, `${className}: split op ${opId} has no fields`);
+			const accion = (fieldsByOp[opId] ?? []).find((x) => x.name === 'accion');
+			ok(!!accion, `${className}.${opId}: accion field missing`);
+			if (accion) {
+				ok(
+					accion.default === accionDefault,
+					`${className}.${opId}.accion default "${accion.default}" !== "${accionDefault}"`,
+				);
+				const optValues = (accion.options ?? []).map((o) => o.value);
+				ok(
+					optValues.includes('CONTINUAR') && optValues.includes('TERMINAR'),
+					`${className}.${opId}.accion options must offer CONTINUAR/TERMINAR`,
+				);
+				ok(
+					!accion.noDataExpression,
+					`${className}.${opId}.accion: expressions must stay available`,
+				);
+			}
+		}
+	}
 }
 
-const summary = `nodes ${expectedNodes}/${expectedNodes}, spec operations ${allOps.size}, covered options ${coveredOps}`;
-if (failures.length > 0 || coveredOps !== allOps.size) {
+const summary = `nodes ${expectedNodes}/${expectedNodes}, node operations ${coveredOps}/${expectedOptionCount} (spec ${allOps.size} + ${Object.values(SPLIT).flat().length} splits)`;
+if (failures.length > 0 || coveredOps !== expectedOptionCount) {
 	console.error(`FAIL — ${summary}`);
 	for (const f of failures) console.error(` - ${f}`);
 	process.exit(1);
 }
 console.log(
-	`PASS — ${summary}; every node references the termarBrandsApi credential and has an endpoint param defaulting to ${SERVER_URL}`,
+	`PASS — ${summary}; fixed defaults verified (seccion=CONSULTORIA, accion=ALMAOK/desplegar, opcion=PREBRANCH, dominio=${FIXED_DEFAULTS.dominio}, split accion CONTINUAR/TERMINAR); every parameter field expression-editable`,
 );

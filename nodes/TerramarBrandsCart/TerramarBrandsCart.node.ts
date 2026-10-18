@@ -302,7 +302,7 @@ export class TerramarBrandsCart implements INodeType {
 						operation: ['listWarehouses'],
 					},
 				},
-				default: '',
+				default: 'carrito.terramarbrands.com.mx',
 			},
 			{
 				displayName: 'Origen',
@@ -330,7 +330,7 @@ export class TerramarBrandsCart implements INodeType {
 						operation: ['listCartCategories'],
 					},
 				},
-				default: '',
+				default: 'ALMAOK',
 			},
 			{
 				displayName: 'Usuario OK',
@@ -421,7 +421,7 @@ export class TerramarBrandsCart implements INodeType {
 						operation: ['listCartCategories'],
 					},
 				},
-				default: '',
+				default: 'carrito.terramarbrands.com.mx',
 			},
 			{
 				displayName: 'Accion',
@@ -435,7 +435,7 @@ export class TerramarBrandsCart implements INodeType {
 						operation: ['listCartProducts'],
 					},
 				},
-				default: '',
+				default: 'desplegar',
 			},
 			{
 				displayName: 'Usuario OK',

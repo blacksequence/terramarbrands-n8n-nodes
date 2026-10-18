@@ -126,7 +126,7 @@ export class TerramarBrandsSession implements INodeType {
 						operation: ['loginConsultora'],
 					},
 				},
-				default: '',
+				default: 'CONSULTORIA',
 			},
 			{
 				displayName: 'Usuario',

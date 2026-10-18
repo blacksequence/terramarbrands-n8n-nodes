@@ -184,7 +184,7 @@ export class TerramarBrandsOrders implements INodeType {
 						operation: ['listShipments'],
 					},
 				},
-				default: '',
+				default: 'carrito.terramarbrands.com.mx',
 			},
 			{
 				displayName: 'Idioma',
@@ -232,7 +232,7 @@ export class TerramarBrandsOrders implements INodeType {
 						operation: ['getAccountStatus'],
 					},
 				},
-				default: '',
+				default: 'carrito.terramarbrands.com.mx',
 			},
 			{
 				displayName: 'Idioma',

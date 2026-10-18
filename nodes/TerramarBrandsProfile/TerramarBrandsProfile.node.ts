@@ -13,7 +13,21 @@ import {
 import { apiRequest, type TerramarBrandsOpSpec } from '../GenericFunctions';
 
 const OPS: Record<string, TerramarBrandsOpSpec> = {
-	getConsultantProfile: {
+	readConsultantProfile: {
+		method: 'POST',
+		path: '/postContratoActualiza',
+		query: {},
+		headers: {
+			dominio: ['Dominio', true],
+		},
+		body: {
+			accion: ['accion', true],
+			usuarioOK: ['usuarioOK', true],
+		},
+		bodyJson: {},
+		isPublic: false,
+	},
+	updateConsultantProfile: {
 		method: 'POST',
 		path: '/postContratoActualiza',
 		query: {},
@@ -190,7 +204,7 @@ export class TerramarBrandsProfile implements INodeType {
 				type: 'options',
 				noDataExpression: true,
 				required: true,
-				default: 'signContract',
+				default: 'updateConsultantProfile',
 				displayOptions: {
 					show: {
 						resource: ['contrato'],
@@ -198,16 +212,22 @@ export class TerramarBrandsProfile implements INodeType {
 				},
 				options: [
 					{
+						name: 'Actualizar Datos De La Consultora',
+						value: 'updateConsultantProfile',
+						description: 'POST /postContratoActualiza',
+						action: 'Terramar brands profile actualizar datos de la consultora',
+					},
+					{
 						name: 'Firmar / Validar Contrato De Alta (MX)',
 						value: 'signContract',
 						description: 'POST /postContrato',
 						action: 'Terramar brands profile firmar validar contrato de alta mx',
 					},
 					{
-						name: 'Leer / Actualizar Datos De La Consultora',
-						value: 'getConsultantProfile',
+						name: 'Leer Datos De La Consultora',
+						value: 'readConsultantProfile',
 						description: 'POST /postContratoActualiza',
-						action: 'Terramar brands profile leer actualizar datos de la consultora',
+						action: 'Terramar brands profile leer datos de la consultora',
 					},
 				],
 			},
@@ -274,24 +294,34 @@ export class TerramarBrandsProfile implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['contrato'],
-						operation: ['getConsultantProfile'],
+						operation: ['readConsultantProfile'],
 					},
 				},
-				default: '',
+				default: 'carrito.terramarbrands.com.mx',
 			},
 			{
 				displayName: 'Accion',
 				name: 'accion',
-				type: 'string',
+				type: 'options',
 				required: true,
-				description: '"" para leer; "CONTINUAR"/"TERMINAR" para actualizar',
+				description: 'Acción de la solicitud — CONTINUAR (leer) / TERMINAR (actualizar)',
 				displayOptions: {
 					show: {
 						resource: ['contrato'],
-						operation: ['getConsultantProfile'],
+						operation: ['readConsultantProfile'],
 					},
 				},
-				default: '',
+				default: 'CONTINUAR',
+				options: [
+					{
+						name: 'CONTINUAR',
+						value: 'CONTINUAR',
+					},
+					{
+						name: 'TERMINAR',
+						value: 'TERMINAR',
+					},
+				],
 			},
 			{
 				displayName: 'Usuario OK',
@@ -302,7 +332,59 @@ export class TerramarBrandsProfile implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['contrato'],
-						operation: ['getConsultantProfile'],
+						operation: ['readConsultantProfile'],
+					},
+				},
+				default: '',
+			},
+			{
+				displayName: 'Dominio',
+				name: 'dominio',
+				type: 'string',
+				required: true,
+				description: 'Dominio del sitio (p. ej. carrito.terramarbrands.com.mx)',
+				displayOptions: {
+					show: {
+						resource: ['contrato'],
+						operation: ['updateConsultantProfile'],
+					},
+				},
+				default: 'carrito.terramarbrands.com.mx',
+			},
+			{
+				displayName: 'Accion',
+				name: 'accion',
+				type: 'options',
+				required: true,
+				description: 'Acción de la solicitud — CONTINUAR (leer) / TERMINAR (actualizar)',
+				displayOptions: {
+					show: {
+						resource: ['contrato'],
+						operation: ['updateConsultantProfile'],
+					},
+				},
+				default: 'TERMINAR',
+				options: [
+					{
+						name: 'CONTINUAR',
+						value: 'CONTINUAR',
+					},
+					{
+						name: 'TERMINAR',
+						value: 'TERMINAR',
+					},
+				],
+			},
+			{
+				displayName: 'Usuario OK',
+				name: 'usuarioOK',
+				type: 'string',
+				required: true,
+				description: 'Kit de la consultora',
+				displayOptions: {
+					show: {
+						resource: ['contrato'],
+						operation: ['updateConsultantProfile'],
 					},
 				},
 				default: '',
@@ -631,7 +713,7 @@ export class TerramarBrandsProfile implements INodeType {
 						operation: ['getShippingAddress'],
 					},
 				},
-				default: '',
+				default: 'carrito.terramarbrands.com.mx',
 			},
 			{
 				displayName: 'Dominio',
@@ -645,7 +727,7 @@ export class TerramarBrandsProfile implements INodeType {
 						operation: ['updateShippingAddress'],
 					},
 				},
-				default: '',
+				default: 'carrito.terramarbrands.com.mx',
 			},
 			{
 				displayName: 'Solo Paqueteria',
