@@ -1,6 +1,6 @@
 {
 	"name": "n8n-nodes-terramarbrands",
-	"version": "0.3.1",
+	"version": "0.3.2",
 	"description": "n8n community nodes for the Terramar Brands API (wsTerramarV2): catalog, cart, orders, profile, awards, lineage, payments and more.",
 	"license": "MIT",
 	"homepage": "https://github.com/blacksequence/terramarbrands-n8n-nodes#readme",

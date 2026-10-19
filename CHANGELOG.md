@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.2 (2026-10-19)
+
+### Fixed
+
+- **Leer datos de la consultora works again.** 0.3.1 dropped the `accion` key from the request when "Leer (vacío)" was selected, and the API answers `Accion inválida` whenever the key is missing (it accepts an empty value, never an absent one). The read request now always carries `accion: ""` — exactly the payload the cart SPA sends — while the empty option still executes without tripping n8n's required validation. The coverage checker gained a behavioral gate that executes the read/update operations against a stubbed helper and asserts the outgoing body, so this class of regression cannot ship silently again.
+
 ## 0.3.1 (2026-10-19)
 
 ### Fixed
