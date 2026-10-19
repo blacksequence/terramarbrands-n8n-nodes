@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.3.1 (2026-10-19)
+
+### Fixed
+
+- **The session token now really works in Usuario + Contraseña mode.** n8n never ran the credential's automatic login (it requires a hidden expirable token property), so executions sent an empty `Bearer` and the API answered `mensaje 499`. The credential now carries the hidden expirable auth token: the first execution logs in and n8n **stores and reuses the token across executions**, and when the API reports it expired — its app-level `499` answer, which rides on HTTP 200 — the nodes **re-login transparently, retry the request once and cache the fresh token per process** (verified live: one re-login served two stale-token executions). **Test connection** doubles as the manual refresh button.
+- Selecting **Leer (vacío)** on the consultant profile read no longer trips n8n's `Parameter Accion is required` — the field ships without the required flag when the empty read value is the default.
+- Operation actions no longer repeat the node-name prefix (`Terramar brands profile …`); the operations panel shows just the operation summary.
+
+### Changed
+
+- README credentials section rewritten for the two modes and the verified token lifecycle.
+
 ## 0.3.0 (2026-10-19)
 
 ### Added
