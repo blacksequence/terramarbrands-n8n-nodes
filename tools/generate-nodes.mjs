@@ -727,7 +727,7 @@ const nodeTsFile = (config, ops, icons) => {
 		name: op.summary,
 		value: op.opId,
 		description: `${op.method} ${op.path}`,
-		action: `${config.displayName}: ${op.summary}`,
+		action: op.summary,
 	});
 
 	const properties = [

@@ -195,6 +195,17 @@ for (const [tag, { className, name }] of Object.entries(TAG_NODES)) {
 	for (const v of values) ok(nodeOpUniverse.has(v), `${className}: unknown operation "${v}"`);
 	coveredOps += values.size;
 
+	// operation actions must not repeat the node branding — the user asked for
+	// the "Terramar " prefix to stay out of the descriptions
+	for (const f of operationFields) {
+		for (const o of f.options ?? []) {
+			ok(
+				!/^Terramar /i.test(o.action ?? ''),
+				`${className}: option "${o.value}" action still carries the Terramar prefix: "${o.action}"`,
+			);
+		}
+	}
+
 	// fields by operation (displayOptions.show.operation)
 	const fieldsByOp = {};
 	for (const p of desc.properties ?? []) {
