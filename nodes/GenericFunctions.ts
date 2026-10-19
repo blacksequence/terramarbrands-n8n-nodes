@@ -7,7 +7,10 @@ import {
 
 /**
  * Static per-operation request metadata generated from the OpenAPI spec.
- * Every map is: field name -> [spec param name, required].
+ * Every map is: field name -> [spec param name, required]. Required fields
+ * are always sent — even with an empty value — because the API validates the
+ * key's presence (a body without accion answers "Accion inválida"); empty
+ * values of optional fields are omitted.
  */
 export interface TerramarBrandsOpSpec {
 	method: 'GET' | 'POST';

@@ -433,12 +433,12 @@ const collectOps = () => {
 					accionMeta.enumValues = split.choices ?? SPLIT_ACTIONS.slice();
 					accionMeta.default = split.accion;
 					accionMeta.description = split.accionDescription ?? 'Acción de la solicitud';
-					// n8n's required validation treats a selected empty-string value as
-					// missing ("Parameter Accion is required"), so a split that offers
-					// the empty read value must not be required.
-					if ((split.choices ?? SPLIT_ACTIONS).includes('')) {
-						accionMeta.required = false;
-					}
+					// meta.required keeps the spec truth: the API validates the accion
+					// KEY's presence — a body without the key is answered "Accion
+					// inválida" — so the request must always carry it, even with the
+					// empty read value. fieldFor suppresses the UI-level required for
+					// options fields that offer "" (n8n treats a selected empty value
+					// as missing and would block execution).
 					(byTag[tag] ??= []).push(splitEntry);
 				}
 				continue;
@@ -612,7 +612,10 @@ const GENERIC_FUNCTIONS_TS = `import {
 
 /**
  * Static per-operation request metadata generated from the OpenAPI spec.
- * Every map is: field name -> [spec param name, required].
+ * Every map is: field name -> [spec param name, required]. Required fields
+ * are always sent — even with an empty value — because the API validates the
+ * key's presence (a body without accion answers "Accion inválida"); empty
+ * values of optional fields are omitted.
  */
 export interface TerramarBrandsOpSpec {
 	method: 'GET' | 'POST';
@@ -838,6 +841,11 @@ const nodeTsFile = (config, ops, icons) => {
 			FIELD_DEFAULTS[fieldName];
 		if (meta.enumValues) {
 			field.type = 'options';
+			// n8n's required validation treats a selected empty-string value as
+			// missing ("Parameter Accion is required"), so an options field that
+			// offers "" must not be required in the UI — the request still always
+			// carries the key (OPS required flag), which the API validates.
+			field.required = meta.required && !meta.enumValues.includes('');
 			field.default = meta.default ?? fixedDefault ?? meta.enumValues[0];
 			field.options = meta.enumValues
 				.map((v) => ({ name: ENUM_LABELS[meta.name]?.[v] ?? v, value: v }))

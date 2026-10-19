@@ -16,6 +16,9 @@
  *     read accion "", update accion CONTINUAR/TERMINAR, Idioma 0)
  *   - every parameter field stays expression-editable (no noDataExpression
  *     outside operation/resource)
+ *   - the split ops' request bodies, executed against a stubbed credential
+ *     helper: accion must reach the API even when empty (missing key =
+ *     "Accion inválida")
  *
  * Usage: node tools/check-coverage.mjs [--spec /path/to/openapi.json]
  * Prints PASS and exits 0 when everything matches, FAIL + reasons otherwise.
@@ -311,6 +314,65 @@ for (const [tag, { className, name }] of Object.entries(TAG_NODES)) {
 				);
 			}
 		}
+		// Behavioral gate: execute the split ops against a stubbed credential
+		// helper and inspect the outgoing request. The API validates the accion
+		// KEY's presence — a body without it is answered "Accion inválida"
+		// (the 0.3.1 regression this gate locks out).
+		const runSplitOp = async (opId, params) => {
+			const full = {
+				endpoint: SERVER_URL,
+				resource: 'contrato',
+				dominio: FIXED_DEFAULTS.dominio,
+				...params,
+			};
+			const captured = [];
+			await new Ctor().execute.call({
+				getInputData: () => [{ json: {} }],
+				getNodeParameter: (name) => full[name],
+				getNode: () => ({
+					name: 'Terramar Brands Profile',
+					type: 'n8n-nodes-terramarbrands.terramarBrandsProfile',
+					typeVersion: 1,
+					position: [0, 0],
+					parameters: full,
+				}),
+				continueOnFail: () => false,
+				getCredentials: async () => ({ usuario: 'TE1234567', password: 'x' }),
+				helpers: {
+					httpRequestWithAuthentication: async (_name, options) => {
+						captured.push(options);
+						return { tipoMensaje: 'exito' };
+					},
+				},
+			});
+			return captured[0];
+		};
+		const readReq = await runSplitOp('readConsultantProfile', {
+			operation: 'readConsultantProfile',
+			accion: '',
+			usuarioOK: '4233285',
+		});
+		ok(
+			readReq?.method === 'POST' && (readReq.url ?? '').endsWith('/postContratoActualiza'),
+			`readConsultantProfile must POST ${SERVER_URL}/postContratoActualiza`,
+		);
+		ok(
+			readReq !== undefined && 'accion' in (readReq.body ?? {}) && readReq.body.accion === '',
+			`readConsultantProfile must send accion:"" — without the key the API answers "Accion inválida" (body: ${JSON.stringify(readReq?.body)})`,
+		);
+		ok(
+			readReq?.body?.usuarioOK === '4233285',
+			`readConsultantProfile must send usuarioOK (body: ${JSON.stringify(readReq?.body)})`,
+		);
+		const updateReq = await runSplitOp('updateConsultantProfile', {
+			operation: 'updateConsultantProfile',
+			accion: 'TERMINAR',
+			usuarioOK: '4233285',
+		});
+		ok(
+			updateReq?.body?.accion === 'TERMINAR',
+			`updateConsultantProfile must send accion TERMINAR (body: ${JSON.stringify(updateReq?.body)})`,
+		);
 	}
 	if (tag === 'Pedidos y facturación') {
 		ok(values.has('getInvoices'), `${className}: getInvoices operation missing`);

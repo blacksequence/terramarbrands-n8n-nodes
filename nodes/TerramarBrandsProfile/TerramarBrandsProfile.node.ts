@@ -21,7 +21,7 @@ const OPS: Record<string, TerramarBrandsOpSpec> = {
 			dominio: ['Dominio', true],
 		},
 		body: {
-			accion: ['accion', false],
+			accion: ['accion', true],
 			usuarioOK: ['usuarioOK', true],
 		},
 		bodyJson: {},
