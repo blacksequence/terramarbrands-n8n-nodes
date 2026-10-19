@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.3.0 (2026-10-19)
+
+### Added
+
+- **Invoices by month (GetInvoices)** in Terramar Brands Orders — `GET /GetInvoices?Axo=<year>&Mes=<month>&Idioma=<0|1>` with the session token, exactly as the cart SPA calls it. Verified live: returns the invoice list with folio, order, total and PDF/XML URLs.
+
+### Changed
+
+- The package now registers **only Terramar Brands Profile and Terramar Brands Orders**; the other ten categories stay dormant in the generator until `tools/active-nodes.mjs` lists them again.
+- Consultant profile read (Leer) defaults `accion` to the empty value — `postContratoActualiza` with `accion: ""` returns the full record (live-verified); `CONTINUAR` / `TERMINAR` remain available for the contract flow, and Actualizar keeps `TERMINAR` as its default.
+- `usuarioOK` defaults to `1234567` and its description now states it must NOT carry the `TE` prefix (the kit is the login user minus `TE`).
+- The OpenAPI spec is consumed through the `terramarbrands-openapi` git submodule; CI checks out submodules recursively.
+- Credential: the internal password field is now `password` (display "Contraseña"; the login still sends `claveAcceso` to the API). Existing credentials need the password re-entered once.
+- Internal: the co-author commit hook was removed from the public repo, and `.env` is gitignored and never tracked.
+
 ## 0.2.0 (2026-10-18)
 
 ### Added
