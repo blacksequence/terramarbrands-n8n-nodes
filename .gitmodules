@@ -1,0 +1,3 @@
+[submodule "terramarbrands-openapi"]
+	path = terramarbrands-openapi
+	url = https://github.com/blacksequence/terramarbrands-openapi

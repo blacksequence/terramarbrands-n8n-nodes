@@ -24,6 +24,19 @@ const OPS: Record<string, TerramarBrandsOpSpec> = {
 		bodyJson: {},
 		isPublic: false,
 	},
+	getInvoices: {
+		method: 'GET',
+		path: '/GetInvoices',
+		query: {
+			axo: ['Axo', true],
+			mes: ['Mes', true],
+			idioma: ['Idioma', true],
+		},
+		headers: {},
+		body: {},
+		bodyJson: {},
+		isPublic: false,
+	},
 	listShipments: {
 		method: 'GET',
 		path: '/getEmbarques',
@@ -83,7 +96,7 @@ export class TerramarBrandsOrders implements INodeType {
 		icon: { light: 'file:TerramarBrandsOrders.svg', dark: 'file:TerramarBrandsOrders.dark.svg' },
 		group: ['input'],
 		version: 1,
-		subtitle: '={{$parameter["operation"]}}',
+		subtitle: '={{$parameter["resource"] + ": " + $parameter["operation"]}}',
 		description: 'Orders and invoicing (Pedidos y facturación) on the Terramar Brands API: invoices, shipments, account status and catalog orders.',
 		defaults: {
 			name: 'Terramar Brands Orders',
@@ -108,25 +121,62 @@ export class TerramarBrandsOrders implements INodeType {
 				description: 'Base URL of the Terramar Brands API (wsTerramarV2 Service1.svc). Change it to point the node at another environment.',
 			},
 			{
+				displayName: 'Resource',
+				name: 'resource',
+				type: 'options',
+				noDataExpression: true,
+				required: true,
+				default: 'envios',
+				description: 'The area of the Terramar Brands API to work with',
+				options: [
+					{
+						name: 'Envío',
+						value: 'envios',
+					},
+					{
+						name: 'Facturación',
+						value: 'facturacion',
+					},
+					{
+						name: 'Pedidos De Catálogo',
+						value: 'pedidosCatalogo',
+					},
+				],
+			},
+			{
 				displayName: 'Operation',
 				name: 'operation',
 				type: 'options',
 				noDataExpression: true,
 				required: true,
-				default: 'getCatalogOrderDetail',
-				options: [
-					{
-						name: 'Detalle De Un Pedido De Catálogo Digital',
-						value: 'getCatalogOrderDetail',
-						description: 'GET /getDetallePedidoCatalogo',
-						action: 'Terramar brands orders detalle de un pedido de cat logo digital',
+				default: 'listShipments',
+				displayOptions: {
+					show: {
+						resource: ['envios'],
 					},
+				},
+				options: [
 					{
 						name: 'Embarques Del Periodo Actual',
 						value: 'listShipments',
 						description: 'GET /getEmbarques',
 						action: 'Terramar brands orders embarques del periodo actual',
 					},
+				],
+			},
+			{
+				displayName: 'Operation',
+				name: 'operation',
+				type: 'options',
+				noDataExpression: true,
+				required: true,
+				default: 'getAccountStatus',
+				displayOptions: {
+					show: {
+						resource: ['facturacion'],
+					},
+				},
+				options: [
 					{
 						name: 'Estado De Cuenta (3 Meses)',
 						value: 'getAccountStatus',
@@ -138,6 +188,33 @@ export class TerramarBrandsOrders implements INodeType {
 						value: 'listInvoices',
 						description: 'GET /getFacturas',
 						action: 'Terramar brands orders facturas de la consultora',
+					},
+					{
+						name: 'Facturas Por Mes (GetInvoices)',
+						value: 'getInvoices',
+						description: 'GET /GetInvoices',
+						action: 'Terramar brands orders facturas por mes get invoices',
+					},
+				],
+			},
+			{
+				displayName: 'Operation',
+				name: 'operation',
+				type: 'options',
+				noDataExpression: true,
+				required: true,
+				default: 'getCatalogOrderDetail',
+				displayOptions: {
+					show: {
+						resource: ['pedidosCatalogo'],
+					},
+				},
+				options: [
+					{
+						name: 'Detalle De Un Pedido De Catálogo Digital',
+						value: 'getCatalogOrderDetail',
+						description: 'GET /getDetallePedidoCatalogo',
+						action: 'Terramar brands orders detalle de un pedido de cat logo digital',
 					},
 					{
 						name: 'Pedidos De Catálogo Digital Por Periodo',
@@ -152,26 +229,82 @@ export class TerramarBrandsOrders implements INodeType {
 				name: 'usuarioOK',
 				type: 'string',
 				required: true,
-				description: 'Kit de la consultora (la SPA de órdenes lo manda vacío y resuelve por token)',
+				description:
+					'Kit de la consultora (usuarioOK) — solo los dígitos, SIN el prefijo TE (p. ej. 1234567)',
 				displayOptions: {
 					show: {
+						resource: ['facturacion'],
 						operation: ['listInvoices'],
 					},
 				},
+				default: '1234567',
+			},
+			{
+				displayName: 'Axo',
+				name: 'axo',
+				type: 'string',
+				required: true,
+				description: 'Año (4 dígitos)',
+				displayOptions: {
+					show: {
+						resource: ['facturacion'],
+						operation: ['getInvoices'],
+					},
+				},
 				default: '',
+			},
+			{
+				displayName: 'Mes',
+				name: 'mes',
+				type: 'string',
+				required: true,
+				description: 'Mes (1–12)',
+				displayOptions: {
+					show: {
+						resource: ['facturacion'],
+						operation: ['getInvoices'],
+					},
+				},
+				default: '',
+			},
+			{
+				displayName: 'Idioma',
+				name: 'idioma',
+				type: 'options',
+				required: true,
+				description: 'Idioma de los mensajes: 0 = español, 1 = inglés',
+				displayOptions: {
+					show: {
+						resource: ['facturacion'],
+						operation: ['getInvoices'],
+					},
+				},
+				default: '0',
+				options: [
+					{
+						name: '0',
+						value: '0',
+					},
+					{
+						name: '1',
+						value: '1',
+					},
+				],
 			},
 			{
 				displayName: 'Usuario OK',
 				name: 'usuarioOK',
 				type: 'string',
 				required: true,
-				description: 'Kit de la consultora (usuario sin el prefijo "TE")',
+				description:
+					'Kit de la consultora (usuarioOK) — solo los dígitos, SIN el prefijo TE (p. ej. 1234567)',
 				displayOptions: {
 					show: {
+						resource: ['envios'],
 						operation: ['listShipments'],
 					},
 				},
-				default: '',
+				default: '1234567',
 			},
 			{
 				displayName: 'Dominio',
@@ -181,6 +314,7 @@ export class TerramarBrandsOrders implements INodeType {
 				description: 'Dominio del sitio',
 				displayOptions: {
 					show: {
+						resource: ['envios'],
 						operation: ['listShipments'],
 					},
 				},
@@ -193,6 +327,7 @@ export class TerramarBrandsOrders implements INodeType {
 				description: 'Idioma: 0 = español, 1 = inglés',
 				displayOptions: {
 					show: {
+						resource: ['envios'],
 						operation: ['listShipments'],
 					},
 				},
@@ -213,13 +348,15 @@ export class TerramarBrandsOrders implements INodeType {
 				name: 'usuarioOK',
 				type: 'string',
 				required: true,
-				description: 'Kit de la consultora (usuario sin el prefijo "TE")',
+				description:
+					'Kit de la consultora (usuarioOK) — solo los dígitos, SIN el prefijo TE (p. ej. 1234567)',
 				displayOptions: {
 					show: {
+						resource: ['facturacion'],
 						operation: ['getAccountStatus'],
 					},
 				},
-				default: '',
+				default: '1234567',
 			},
 			{
 				displayName: 'Dominio',
@@ -229,6 +366,7 @@ export class TerramarBrandsOrders implements INodeType {
 				description: 'Dominio del sitio',
 				displayOptions: {
 					show: {
+						resource: ['facturacion'],
 						operation: ['getAccountStatus'],
 					},
 				},
@@ -241,6 +379,7 @@ export class TerramarBrandsOrders implements INodeType {
 				description: 'Idioma: 0 = español, 1 = inglés',
 				displayOptions: {
 					show: {
+						resource: ['pedidosCatalogo'],
 						operation: ['listCatalogOrders'],
 					},
 				},
@@ -264,6 +403,7 @@ export class TerramarBrandsOrders implements INodeType {
 				description: 'Año (4 dígitos)',
 				displayOptions: {
 					show: {
+						resource: ['pedidosCatalogo'],
 						operation: ['listCatalogOrders'],
 					},
 				},
@@ -277,6 +417,7 @@ export class TerramarBrandsOrders implements INodeType {
 				description: 'Mes (1–12)',
 				displayOptions: {
 					show: {
+						resource: ['pedidosCatalogo'],
 						operation: ['listCatalogOrders'],
 					},
 				},
@@ -290,6 +431,7 @@ export class TerramarBrandsOrders implements INodeType {
 				description: 'ID del pedido (de /getPedidosCatalogo)',
 				displayOptions: {
 					show: {
+						resource: ['pedidosCatalogo'],
 						operation: ['getCatalogOrderDetail'],
 					},
 				},
@@ -302,6 +444,7 @@ export class TerramarBrandsOrders implements INodeType {
 				description: 'Idioma: 0 = español, 1 = inglés',
 				displayOptions: {
 					show: {
+						resource: ['pedidosCatalogo'],
 						operation: ['getCatalogOrderDetail'],
 					},
 				},

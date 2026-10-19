@@ -61,7 +61,7 @@ export class TerramarBrandsApi implements ICredentialType {
 			},
 			body: {
 				usuario: credentials.usuario,
-				claveAcceso: credentials.claveAcceso,
+				claveAcceso: credentials.password,
 				origen: credentials.origen ?? 'CARRITONUE',
 			},
 			json: true,
@@ -95,7 +95,7 @@ export class TerramarBrandsApi implements ICredentialType {
 		},
 		{
 			displayName: 'Contraseña',
-			name: 'claveAcceso',
+			name: 'password',
 			required: false,
 			type: 'string',
 			typeOptions: {

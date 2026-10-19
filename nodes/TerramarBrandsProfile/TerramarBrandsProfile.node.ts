@@ -304,18 +304,23 @@ export class TerramarBrandsProfile implements INodeType {
 				name: 'accion',
 				type: 'options',
 				required: true,
-				description: 'Acción de la solicitud — CONTINUAR (leer) / TERMINAR (actualizar)',
+				description:
+					'Acción de la solicitud — vacío lee la ficha; CONTINUAR/TERMINAR avanzan o cierran el contrato',
 				displayOptions: {
 					show: {
 						resource: ['contrato'],
 						operation: ['readConsultantProfile'],
 					},
 				},
-				default: 'CONTINUAR',
+				default: '',
 				options: [
 					{
 						name: 'CONTINUAR',
 						value: 'CONTINUAR',
+					},
+					{
+						name: 'Leer (Vacío)',
+						value: '',
 					},
 					{
 						name: 'TERMINAR',
@@ -328,14 +333,15 @@ export class TerramarBrandsProfile implements INodeType {
 				name: 'usuarioOK',
 				type: 'string',
 				required: true,
-				description: 'Kit de la consultora',
+				description:
+					'Kit de la consultora (usuarioOK) — solo los dígitos, SIN el prefijo TE (p. ej. 1234567)',
 				displayOptions: {
 					show: {
 						resource: ['contrato'],
 						operation: ['readConsultantProfile'],
 					},
 				},
-				default: '',
+				default: '1234567',
 			},
 			{
 				displayName: 'Dominio',
@@ -356,7 +362,8 @@ export class TerramarBrandsProfile implements INodeType {
 				name: 'accion',
 				type: 'options',
 				required: true,
-				description: 'Acción de la solicitud — CONTINUAR (leer) / TERMINAR (actualizar)',
+				description:
+					'Acción de la solicitud — CONTINUAR sigue el flujo del contrato; TERMINAR lo cierra',
 				displayOptions: {
 					show: {
 						resource: ['contrato'],
@@ -380,14 +387,15 @@ export class TerramarBrandsProfile implements INodeType {
 				name: 'usuarioOK',
 				type: 'string',
 				required: true,
-				description: 'Kit de la consultora',
+				description:
+					'Kit de la consultora (usuarioOK) — solo los dígitos, SIN el prefijo TE (p. ej. 1234567)',
 				displayOptions: {
 					show: {
 						resource: ['contrato'],
 						operation: ['updateConsultantProfile'],
 					},
 				},
-				default: '',
+				default: '1234567',
 			},
 			{
 				displayName: 'Accion',
@@ -408,14 +416,15 @@ export class TerramarBrandsProfile implements INodeType {
 				name: 'usuarioOK',
 				type: 'string',
 				required: true,
-				description: 'Kit de la consultora',
+				description:
+					'Kit de la consultora (usuarioOK) — solo los dígitos, SIN el prefijo TE (p. ej. 1234567)',
 				displayOptions: {
 					show: {
 						resource: ['contrato'],
 						operation: ['signContract'],
 					},
 				},
-				default: '',
+				default: '1234567',
 			},
 			{
 				displayName: 'Kit Patrocinadora',
@@ -747,14 +756,15 @@ export class TerramarBrandsProfile implements INodeType {
 				name: 'usuarioOK',
 				type: 'string',
 				required: true,
-				description: 'Kit de la consultora',
+				description:
+					'Kit de la consultora (usuarioOK) — solo los dígitos, SIN el prefijo TE (p. ej. 1234567)',
 				displayOptions: {
 					show: {
 						resource: ['domicilio'],
 						operation: ['updateShippingAddress'],
 					},
 				},
-				default: '',
+				default: '1234567',
 			},
 			{
 				displayName: 'Folio Pedido',
@@ -957,14 +967,15 @@ export class TerramarBrandsProfile implements INodeType {
 				name: 'usuarioOK',
 				type: 'string',
 				required: true,
-				description: 'Kit de la consultora',
+				description:
+					'Kit de la consultora (usuarioOK) — solo los dígitos, SIN el prefijo TE (p. ej. 1234567)',
 				displayOptions: {
 					show: {
 						resource: ['cuenta'],
 						operation: ['changePassword'],
 					},
 				},
-				default: '',
+				default: '1234567',
 			},
 			{
 				displayName: 'Contrasenia',

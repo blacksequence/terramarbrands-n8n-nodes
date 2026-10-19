@@ -5,14 +5,15 @@
  *
  *   - package.json community-node standards (n8n-nodes- name,
  *     n8n-community-node-package keyword, n8n attribute wiring, built files)
- *   - one node per OpenAPI category, description.name as expected
+ *   - one node per ACTIVE OpenAPI category (tools/active-nodes.mjs),
+ *     description.name as expected
  *   - spec operations present as operation options — including the deliberate
  *     split of combined read+update endpoints (SPLIT) — with no extras
- *   - every node references the termarBrandsApi credential
+ *   - every node references the terramarBrandsApi credential
  *   - every node has an `endpoint` param defaulting to the spec server URL
- *   - fixed-value defaults ship pre-filled (seccion CONSULTORIA, cart
- *     accion ALMAOK/desplegar, opcion PREBRANCH, dominio
- *     carrito.terramarbrands.com.mx, split accion CONTINUAR/TERMINAR)
+ *   - fixed-value defaults ship pre-filled (usuarioOK 1234567 without the TE
+ *     prefix, dominio carrito.terramarbrands.com.mx, origen CARRITONUE,
+ *     read accion "", update accion CONTINUAR/TERMINAR, Idioma 0)
  *   - every parameter field stays expression-editable (no noDataExpression
  *     outside operation/resource)
  *
@@ -26,13 +27,15 @@ import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 
+import { ACTIVE_NODES } from './active-nodes.mjs';
+
 const ROOT = path.resolve(import.meta.dirname, '..');
 
 const specArg = process.argv.indexOf('--spec');
 const SPEC =
 	specArg > 0
 		? process.argv[specArg + 1]
-		: path.join(ROOT, '..', 'terramarbrands-openapi', 'openapi.json');
+		: path.join(ROOT, 'terramarbrands-openapi', 'openapi.json');
 
 const spec = JSON.parse(readFileSync(SPEC, 'utf8'));
 const SERVER_URL = spec.servers?.[0]?.url;
@@ -61,15 +64,12 @@ const SPLIT = {
 
 // Fixed-value defaults that must ship pre-filled on the generated fields.
 const FIXED_DEFAULTS = {
-	'loginConsultora.seccion': 'CONSULTORIA',
-	'listCartCategories.accion': 'ALMAOK',
-	'listCartProducts.accion': 'desplegar',
-	'getBranchStatus.opcion': 'PREBRANCH',
 	dominio: 'carrito.terramarbrands.com.mx',
 	origen: 'CARRITONUE',
+	usuarioOK: '1234567',
 };
 const SPLIT_ACCION_DEFAULTS = {
-	readConsultantProfile: 'CONTINUAR',
+	readConsultantProfile: '',
 	updateConsultantProfile: 'TERMINAR',
 };
 
@@ -85,6 +85,7 @@ for (const [opPath, pathItem] of Object.entries(spec.paths ?? {})) {
 		if (typeof op !== 'object' || op === null) continue;
 		if (!op.operationId) continue;
 		const tag = op.tags?.[0];
+		if (!ACTIVE_NODES.has(TAG_NODES[tag]?.className ?? '')) continue;
 		(opsByTag[tag] ??= new Set()).add(op.operationId);
 	}
 }
@@ -103,7 +104,7 @@ ok(
 	(pkg.keywords ?? []).includes('n8n-community-node-package'),
 	'package.json keywords must include n8n-community-node-package',
 );
-const expectedNodes = Object.keys(TAG_NODES).length;
+const expectedNodes = ACTIVE_NODES.size;
 ok(
 	(pkg.n8n?.nodes ?? []).length === expectedNodes,
 	`n8n.nodes must list ${expectedNodes} files (got ${(pkg.n8n?.nodes ?? []).length})`,
@@ -139,7 +140,7 @@ if (existsSync(credDist)) {
 		ok(!!cred.authenticate, 'credential: authenticate missing');
 		ok(!!cred.test?.request, 'credential: connection test missing');
 		const credFields = Object.fromEntries((cred.properties ?? []).map((p) => [p.name, p]));
-		for (const expected of ['usuario', 'claveAcceso', 'origen', 'token']) {
+		for (const expected of ['usuario', 'password', 'origen', 'token']) {
 			ok(!!credFields[expected], `credential: field ${expected} missing`);
 		}
 		if (credFields.origen) {
@@ -153,6 +154,7 @@ if (existsSync(credDist)) {
 
 let coveredOps = 0;
 for (const [tag, { className, name }] of Object.entries(TAG_NODES)) {
+	if (!ACTIVE_NODES.has(className)) continue;
 	const distPath = path.join(ROOT, 'dist', 'nodes', className, `${className}.node.js`);
 	if (!existsSync(distPath)) {
 		ok(false, `dist node missing: ${path.relative(ROOT, distPath)}`);
@@ -230,16 +232,6 @@ for (const [tag, { className, name }] of Object.entries(TAG_NODES)) {
 		}
 	}
 
-	if (tag === 'Sesión') {
-		checkDefault('loginConsultora', 'seccion', FIXED_DEFAULTS['loginConsultora.seccion']);
-	}
-	if (tag === 'Carrito') {
-		checkDefault('listCartCategories', 'accion', FIXED_DEFAULTS['listCartCategories.accion']);
-		checkDefault('listCartProducts', 'accion', FIXED_DEFAULTS['listCartProducts.accion']);
-	}
-	if (tag === 'Linaje') {
-		checkDefault('getBranchStatus', 'opcion', FIXED_DEFAULTS['getBranchStatus.opcion']);
-	}
 	if (tag === 'Perfil de consultora') {
 		for (const [opId, accionDefault] of Object.entries(SPLIT_ACCION_DEFAULTS)) {
 			ok((fieldsByOp[opId] ?? []).length > 0, `${className}: split op ${opId} has no fields`);
@@ -255,9 +247,40 @@ for (const [tag, { className, name }] of Object.entries(TAG_NODES)) {
 					optValues.includes('CONTINUAR') && optValues.includes('TERMINAR'),
 					`${className}.${opId}.accion options must offer CONTINUAR/TERMINAR`,
 				);
+				if (opId === 'readConsultantProfile') {
+					ok(
+						optValues.includes(''),
+						'readConsultantProfile.accion options must offer the empty (read) value',
+					);
+				}
 				ok(
 					!accion.noDataExpression,
 					`${className}.${opId}.accion: expressions must stay available`,
+				);
+			}
+			const uok = (fieldsByOp[opId] ?? []).find((x) => x.name === 'usuarioOK');
+			ok(!!uok, `${className}.${opId}: usuarioOK field missing`);
+			if (uok) {
+				ok(
+					uok.default === FIXED_DEFAULTS.usuarioOK,
+					`${className}.${opId}.usuarioOK default "${uok.default}" !== "${FIXED_DEFAULTS.usuarioOK}"`,
+				);
+				ok(
+					/SIN el prefijo TE/.test(uok.description ?? ''),
+					`${className}.${opId}.usuarioOK description must say the TE prefix is not used`,
+				);
+			}
+		}
+	}
+	if (tag === 'Pedidos y facturación') {
+		ok(values.has('getInvoices'), `${className}: getInvoices operation missing`);
+		for (const fieldName of ['axo', 'mes', 'idioma']) {
+			const f = (fieldsByOp.getInvoices ?? []).find((x) => x.name === fieldName);
+			ok(!!f, `${className}.getInvoices: field ${fieldName} missing`);
+			if (fieldName === 'idioma' && f) {
+				ok(
+					f.default === '0',
+					`${className}.getInvoices.idioma default "${f.default}" !== "0"`,
 				);
 			}
 		}
@@ -271,5 +294,5 @@ if (failures.length > 0 || coveredOps !== expectedOptionCount) {
 	process.exit(1);
 }
 console.log(
-	`PASS — ${summary}; fixed defaults verified (seccion=CONSULTORIA, accion=ALMAOK/desplegar, opcion=PREBRANCH, dominio=${FIXED_DEFAULTS.dominio}, split accion CONTINUAR/TERMINAR); every parameter field expression-editable`,
+	`PASS — ${summary}; fixed defaults verified (usuarioOK=${FIXED_DEFAULTS.usuarioOK} sin TE, dominio=${FIXED_DEFAULTS.dominio}, origen=${FIXED_DEFAULTS.origen}, read accion="", update accion CONTINUAR/TERMINAR, Idioma=0); every parameter field expression-editable`,
 );

@@ -40,13 +40,15 @@ import {
 } from 'node:fs';
 import path from 'node:path';
 
+import { ACTIVE_NODES } from './active-nodes.mjs';
+
 const ROOT = path.resolve(import.meta.dirname, '..');
 
 const specArgIndex = process.argv.indexOf('--spec');
 const SPEC_PATH =
 	specArgIndex > 0
 		? process.argv[specArgIndex + 1]
-		: path.join(ROOT, '..', 'terramarbrands-openapi', 'openapi.json');
+		: path.join(ROOT, 'terramarbrands-openapi', 'openapi.json');
 
 const REPO_URL = 'https://github.com/blacksequence/terramarbrands-n8n-nodes';
 const CREDENTIAL_NAME = 'terramarBrandsApi';
@@ -189,6 +191,19 @@ const NODE_RESOURCES = {
 		},
 		{ name: 'Cuenta', value: 'cuenta', ops: ['changePassword', 'validateEmailToken'] },
 	],
+	TerramarBrandsOrders: [
+		{
+			name: 'Facturación',
+			value: 'facturacion',
+			ops: ['listInvoices', 'getInvoices', 'getAccountStatus'],
+		},
+		{ name: 'Envíos', value: 'envios', ops: ['listShipments'] },
+		{
+			name: 'Pedidos de catálogo',
+			value: 'pedidosCatalogo',
+			ops: ['listCatalogOrders', 'getCatalogOrderDetail'],
+		},
+	],
 };
 
 // Friendlier labels for the spec's enum params (taken from the spec's own
@@ -200,6 +215,7 @@ const ENUM_LABELS = {
 		N: 'N — cerrar el pedido anterior',
 	},
 	viaje: { N: 'Nacional', I: 'Internacional' },
+	accion: { '': 'Leer (vacío)' },
 };
 
 // Fixed-value defaults: fields the API expects to be constant ship pre-filled
@@ -212,6 +228,13 @@ const FIELD_DEFAULTS = {
 	'getBranchStatus.opcion': 'PREBRANCH',
 	dominio: 'carrito.terramarbrands.com.mx',
 	origen: 'CARRITONUE',
+	usuarioOK: '1234567',
+};
+
+// Description overrides the node fields must carry regardless of the spec text
+// (same lookup order as FIELD_DEFAULTS).
+const FIELD_DESCRIPTIONS = {
+	usuarioOK: 'Kit de la consultora (usuarioOK) — solo los dígitos, SIN el prefijo TE (p. ej. 1234567)',
 };
 
 // Spec operations that combine read+update in one endpoint, split into two
@@ -220,11 +243,21 @@ const FIELD_DEFAULTS = {
 const SPLIT_ACTIONS = ['CONTINUAR', 'TERMINAR'];
 const SPLIT_OPS = {
 	getConsultantProfile: [
-		{ opId: 'readConsultantProfile', summary: 'Leer datos de la consultora', accion: 'CONTINUAR' },
+		{
+			opId: 'readConsultantProfile',
+			summary: 'Leer datos de la consultora',
+			accion: '',
+			choices: ['', ...SPLIT_ACTIONS],
+			accionDescription:
+				'Acción de la solicitud — vacío lee la ficha; CONTINUAR/TERMINAR avanzan o cierran el contrato',
+		},
 		{
 			opId: 'updateConsultantProfile',
 			summary: 'Actualizar datos de la consultora',
 			accion: 'TERMINAR',
+			choices: SPLIT_ACTIONS.slice(),
+			accionDescription:
+				'Acción de la solicitud — CONTINUAR sigue el flujo del contrato; TERMINAR lo cierra',
 		},
 	],
 };
@@ -397,10 +430,9 @@ const collectOps = () => {
 					if (!accionMeta) {
 						throw new Error(`Split source ${opId} has no body 'accion' field`);
 					}
-					accionMeta.enumValues = SPLIT_ACTIONS.slice();
+					accionMeta.enumValues = split.choices ?? SPLIT_ACTIONS.slice();
 					accionMeta.default = split.accion;
-					accionMeta.description =
-						'Acción de la solicitud — CONTINUAR (leer) / TERMINAR (actualizar)';
+					accionMeta.description = split.accionDescription ?? 'Acción de la solicitud';
 					(byTag[tag] ??= []).push(splitEntry);
 				}
 				continue;
@@ -408,7 +440,8 @@ const collectOps = () => {
 			(byTag[tag] ??= []).push(entry);
 		}
 	}
-	for (const [tag] of Object.entries(TAG_NODES)) {
+	for (const [tag, config] of Object.entries(TAG_NODES)) {
+		if (!ACTIVE_NODES.has(config.className)) continue;
 		if (!byTag[tag] || byTag[tag].length === 0) {
 			throw new Error(`Tag "${tag}" has no operations in the spec`);
 		}
@@ -483,7 +516,7 @@ export class ${CREDENTIAL_CLASS} implements ICredentialType {
 			},
 			body: {
 				usuario: credentials.usuario,
-				claveAcceso: credentials.claveAcceso,
+				claveAcceso: credentials.password,
 				origen: credentials.origen ?? 'CARRITONUE',
 			},
 			json: true,
@@ -517,7 +550,7 @@ export class ${CREDENTIAL_CLASS} implements ICredentialType {
 		},
 		{
 			displayName: 'Contraseña',
-			name: 'claveAcceso',
+			name: 'password',
 			required: false,
 			type: 'string',
 			typeOptions: {
@@ -641,7 +674,9 @@ const nodeTsFile = (config, ops, icons) => {
 
 	const fieldFor = (op, fieldName, meta, type) => {
 		const description =
-			meta.description || `${humanize(fieldName)} parameter of the Terramar Brands API`;
+			FIELD_DESCRIPTIONS[meta.name] ??
+			FIELD_DESCRIPTIONS[fieldName] ??
+			(meta.description || `${humanize(fieldName)} parameter of the Terramar Brands API`);
 		const show = op.resource
 			? { resource: [op.resource], operation: [op.opId] }
 			: { operation: [op.opId] };
@@ -962,7 +997,7 @@ for (const distPath of oldNodeDistPaths) {
 }
 if (!iconPair) {
 	// re-run: fall back to the first of our own node dirs (icons are identical clones)
-	const firstDir = path.join(ROOT, 'nodes', TAG_NODES['Sesión'].className);
+	const firstDir = path.join(ROOT, 'nodes', TAG_NODES['Perfil de consultora'].className);
 	iconPair = findIconPair(firstDir);
 	if (iconPair) iconSourceDir = firstDir;
 }
@@ -1006,10 +1041,11 @@ if (credentialBrandPair) {
 }
 mkdirWrite('nodes/GenericFunctions.ts', GENERIC_FUNCTIONS_TS);
 
-// --- nodes (one per tag) ---
+// --- nodes (one per tag; only ACTIVE_NODES are generated + wired) ---
 const nodeDistPaths = [];
 const totals = {};
 for (const [tag, config] of Object.entries(TAG_NODES)) {
+	if (!ACTIVE_NODES.has(config.className)) continue;
 	const ops = byTag[tag];
 	totals[config.className] = ops.length;
 	const nodeDir = path.join(ROOT, 'nodes', config.className);
@@ -1041,10 +1077,18 @@ for (const [tag, config] of Object.entries(TAG_NODES)) {
 	nodeDistPaths.push(`dist/nodes/${config.className}/${config.className}.node.js`);
 }
 
-// --- remove scaffold example node dirs + foreign credentials (never our own) ---
+// --- remove scaffold example node dirs, inactive node dirs + foreign credentials ---
 for (const distPath of oldNodeDistPaths) {
 	const dir = srcDirFor(distPath);
-	if (MY_CLASSES.has(path.basename(dir))) continue;
+	const base = path.basename(dir);
+	if (MY_CLASSES.has(base) && !ACTIVE_NODES.has(base)) {
+		if (dir.startsWith(path.join(ROOT, 'nodes')) && existsSync(dir)) {
+			rmSync(dir, { recursive: true, force: true });
+			console.log(`removed inactive node: ${path.relative(ROOT, dir)}`);
+		}
+		continue;
+	}
+	if (MY_CLASSES.has(base)) continue;
 	if (dir.startsWith(path.join(ROOT, 'nodes')) && existsSync(dir)) {
 		rmSync(dir, { recursive: true, force: true });
 		console.log(`removed scaffold node: ${path.relative(ROOT, dir)}`);
@@ -1088,12 +1132,12 @@ console.log('\nGenerated files:');
 for (const f of written) console.log(`  ${f}`);
 if (iconPair) {
 	console.log(
-		`  icons: ${iconExt} light${iconPair.dark ? ' + dark' : ''} copied to ${Object.keys(TAG_NODES).length} node dirs + credential`,
+		`  icons: ${iconExt} light${iconPair.dark ? ' + dark' : ''} copied to ${nodeDistPaths.length} node dirs + credential`,
 	);
 }
 console.log('\nOperations per node:');
 for (const [k, v] of Object.entries(totals)) console.log(`  ${k}: ${v}`);
 const totalOps = Object.values(totals).reduce((a, b) => a + b, 0);
 console.log(
-	`\nTOTAL: ${Object.keys(TAG_NODES).length} nodes, ${totalOps} operations (from ${SPEC_PATH})`,
+	`\nTOTAL: ${nodeDistPaths.length} active nodes, ${totalOps} operations (from ${SPEC_PATH})`,
 );

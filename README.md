@@ -5,9 +5,11 @@ platform behind Terramar Brands México: public catalog, consultant cart, orders
 invoicing, consultant profile, awards and bonuses, lineage, support tickets, travel,
 certificates, product datasheets and hosted payments.
 
-The package is generated from the Terramar Brands OpenAPI specification: **one node per
-API category — 12 nodes covering all 40 operations** — with bearer-token authentication
-and a configurable endpoint.
+The package is generated from the Terramar Brands OpenAPI specification (a git
+submodule of this repo). It currently registers **two nodes — Terramar Brands Profile
+and Terramar Brands Orders**; the other categories stay dormant in the generator until
+`tools/active-nodes.mjs` lists them again. Bearer-token authentication, configurable
+endpoint, and fixed production defaults on every field.
 
 [n8n](https://n8n.io/) is a [fair-code licensed](https://docs.n8n.io/sustainable-use-license/)
 workflow automation platform.
@@ -61,46 +63,37 @@ endpoint is a node parameter by design — the credential holds only the token.
 
 ## Nodes and operations
 
-| Node                         | OpenAPI category      | Operations                                                                                                                                                         |
-| ---------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Terramar Brands Session      | Sesión                | Login, Session info, Password reminder                                                                                                                             |
-| Terramar Brands Catalog      | Catálogo público      | Departments, Product descriptions                                                                                                                                  |
-| Terramar Brands Cart         | Carrito               | _Consulta_: Warehouses, Cart categories, Cart products · _Artículos del carrito_: Add to cart, Recycle cart · _Pedido_: Accept order                               |
-| Terramar Brands Profile      | Perfil de consultora  | _Contrato_: Consultant profile, Sign contract · _Domicilio de envío_: Shipping address, Update shipping address · _Cuenta_: Change password, Validate e-mail token |
-| Terramar Brands Awards       | Premios y bonos       | Awards, Select award, Stage-one bonuses, Stage-two bonuses, SiVale card                                                                                            |
-| Terramar Brands Orders       | Pedidos y facturación | Invoices, Shipments, Account status, Catalog orders, Catalog order detail                                                                                          |
-| Terramar Brands Lineage      | Linaje                | Branch status, Lineage kits, Request branch (active), Request branch (inactive)                                                                                    |
-| Terramar Brands Support      | Atenciones            | List tickets, Ticket comments, Open ticket, Comment on ticket                                                                                                      |
-| Terramar Brands Travel       | Viaje                 | Travel info (national / international)                                                                                                                             |
-| Terramar Brands Certificates | Certificados          | Consultant certificates                                                                                                                                            |
-| Terramar Brands Payments     | Pagos                 | Payment token (ProPay), Complete payment                                                                                                                           |
-| Terramar Brands Product      | Producto              | Product datasheet                                                                                                                                                  |
+| Node                    | OpenAPI category      | Operations                                                                                                                                                                                             |
+| ----------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Terramar Brands Profile | Perfil de consultora  | _Contrato_: Consultant profile (read), Consultant profile (update), Sign contract · _Domicilio de envío_: Shipping address, Update shipping address · _Cuenta_: Change password, Validate e-mail token |
+| Terramar Brands Orders  | Pedidos y facturación | _Facturación_: Invoices, Invoices by month (GetInvoices), Account status · _Envíos_: Shipments · _Pedidos de catálogo_: Catalog orders, Catalog order detail                                           |
 
-Every operation maps 1:1 to an OpenAPI `operationId` — the spec is the authoritative
-reference for request and response shapes.
+Every operation maps 1:1 to an OpenAPI `operationId` — the spec (a git submodule at
+`terramarbrands-openapi/`) is the authoritative reference for request and response
+shapes. The remaining ten categories stay dormant until `tools/active-nodes.mjs`
+lists their classes again.
 
 ## Usage
 
-A minimal catalog flow:
+A one-node profile read: **Terramar Brands Profile → Consultant profile (read)** with
+`Usuario OK` (the consultant kit — default `1234567`, digits only, **no `TE` prefix**).
+The operation posts `accion: ""` to `postContratoActualiza` and returns the full
+consultant record; `CONTINUAR`/`TERMINAR` stay available for the contract flow.
 
-1. **Terramar Brands Session → Login** (no credential needed) with user and password —
-   store the returned token in a **Terramar Brands API** credential.
-2. **Terramar Brands Catalog → Departments** (public) to list departments.
-3. **Terramar Brands Catalog → Product descriptions** with a department to fetch full
-   product sheets.
-
-A checkout flow: **Cart → Warehouses → Cart categories → Cart products → Add to cart →
-Accept order**, then **Payments → Payment token** / **Complete payment**.
+Monthly invoices: **Terramar Brands Orders → Invoices by month (GetInvoices)** with
+`Axo` (year), `Mes` (month) and `Idioma` (`0` = español) — returns the invoice list
+with folio, order, total and PDF/XML URLs.
 
 ## Regenerating from the OpenAPI spec
 
 The nodes are generated code — extend the generator rather than hand-editing:
 
 ```bash
-node tools/generate-nodes.mjs --spec /path/to/openapi.json
+git submodule update --init        # terramarbrands-openapi/ holds openapi.json
+node tools/generate-nodes.mjs      # reads terramarbrands-openapi/openapi.json (--spec overrides)
 npm run lint:fix && npm run build
-node tools/check-coverage.mjs --spec /path/to/openapi.json   # PASS = build matches the spec
-node tools/generate-icons.mjs                                    # regenerate the light/dark icon family (assets/icons)
+node tools/check-coverage.mjs       # PASS = build matches the spec
+node tools/generate-icons.mjs       # regenerate the light/dark icon family (assets/icons)
 ```
 
 The generator throws when the spec grows a shape it cannot map (non-string params,
