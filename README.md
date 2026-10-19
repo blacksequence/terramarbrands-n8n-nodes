@@ -35,16 +35,25 @@ npm install n8n-nodes-terramarbrands
 
 ## Credentials
 
-Create a **Terramar Brands API** credential with the bearer token:
+Two ways to authenticate — pick one:
 
-1. Get the token with the **Terramar Brands Session → Login** operation
-   (`POST /getConsultoriaLogin`) using your consultant user and password — or copy the
-   `TMBcartToken` cookie from the Terramar Brands SPA.
-2. Paste it into the credential's **Token** field.
+- **Usuario + Contraseña (recommended):** fill `Usuario` (TE + 7 digits) and `Contraseña`.
+  The credential logs in on your behalf (`POST /getConsultoriaLogin`, header
+  `seccion: CONSULTORIA`), and n8n **stores the minted session token on the credential**
+  (hidden, expirable) and **reuses it across executions** — it is not renewed on every run.
+  When the API reports the token expired (its app-level `499` answer, which rides on
+  HTTP 200), the nodes re-login transparently with the stored credentials and retry the
+  request once; the fresh token is cached per process so one re-login serves the whole
+  run.
+- **Token:** paste a session token obtained with the **Session → Login** operation (or
+  the `TMBcartToken` cookie) into `Token` to skip the automatic login. A pasted token is
+  sent as-is; when it expires, refresh it manually (or switch to Usuario + Contraseña).
 
-The credential's **Test** action performs a read-only
-`GET https://terramarbrands.mx/wsTerramarV2/Service1.svc/GetBonosEtapaUno` — a
-parameter-free, side-effect-free protected call — so a green test means the token works.
+`Origen` ships with the SPA's fixed value (`CARRITONUE`). Both modes authenticate as
+`Authorization: Bearer <token>`. The credential's **Test** action performs a read-only
+`GET https://terramarbrands.mx/wsTerramarV2/Service1.svc/GetBonosEtapaUno` — in
+Usuario + Contraseña mode it also forces a fresh login and stores the new token, so
+**Test connection doubles as the manual refresh button**.
 
 Public operations (login, password reminder, public catalog) run **without** a
 credential; everything else sends `Authorization: Bearer <token>` automatically via

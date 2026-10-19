@@ -35,16 +35,18 @@ export class TerramarBrandsApi implements ICredentialType {
 		type: 'generic',
 		properties: {
 			headers: {
-				Authorization: '=Bearer {{$credentials.token}}',
+				Authorization: '=Bearer {{$credentials.authToken || $credentials.token}}',
 			},
 		},
 	};
 
 	/**
 	 * User/password mode: run the consultant login (POST /getConsultoriaLogin,
-	 * header seccion=CONSULTORIA, body origen=CARRITONUE) once per credential
-	 * session and merge the returned token so every authenticated operation
-	 * rides on it. Token mode (token filled) skips the login entirely.
+	 * header seccion=CONSULTORIA, body origen=CARRITONUE) and merge the minted
+	 * token into the hidden expirable authToken property — n8n persists it on
+	 * the credential and reuses it across executions until the credential is
+	 * tested or the nodes report it expired. Token mode (token filled) skips
+	 * the login entirely.
 	 */
 	preAuthentication = async function (
 		this: IHttpRequestHelper,
@@ -72,7 +74,7 @@ export class TerramarBrandsApi implements ICredentialType {
 					(response?.mensaje ?? response?.tipoMensaje ?? 'unknown error'),
 			);
 		}
-		return { token: response.token };
+		return { authToken: response.token };
 	};
 
 	test: ICredentialTestRequest = {
@@ -124,6 +126,17 @@ export class TerramarBrandsApi implements ICredentialType {
 			default: '',
 			description:
 				'Session token for token mode — skips the automatic login. Obtain it with the Terramar Brands Session node → Login operation, or copy the TMBcartToken cookie from the SPA. Leave empty to use Usuario + Contraseña.',
+		},
+		{
+			displayName: 'Auth token',
+			name: 'authToken',
+			type: 'hidden',
+			default: '',
+			typeOptions: {
+				expirable: true, password: true,
+			},
+			description:
+				'Session token minted by the automatic login. n8n stores it on the credential and reuses it across executions; the nodes re-login transparently when the API reports it expired (499).',
 		},
 	];
 }

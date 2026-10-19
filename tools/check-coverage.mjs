@@ -149,7 +149,32 @@ if (existsSync(credDist)) {
 				`credential.origen default "${credFields.origen.default}" !== "${FIXED_DEFAULTS.origen}"`,
 			);
 		}
+		const authTokenField = credFields.authToken;
+		ok(!!authTokenField, 'credential: hidden authToken field missing');
+		if (authTokenField) {
+			ok(authTokenField.type === 'hidden', 'credential.authToken must be type hidden');
+			ok(
+				authTokenField.typeOptions?.expirable === true,
+				'credential.authToken must be expirable — without it n8n never runs preAuthentication',
+			);
+		}
+		const authExpr = JSON.stringify(cred.authenticate ?? {});
+		ok(
+				/authToken/.test(authExpr),
+				'credential.authenticate must prefer the minted authToken over the manual token',
+			);
 	}
+}
+
+// ---- GenericFunctions: app-level 499 auto-refresh ----
+const gfDist = path.join(ROOT, 'dist', 'nodes', 'GenericFunctions.js');
+ok(existsSync(gfDist), 'GenericFunctions build missing: dist/nodes/GenericFunctions.js');
+if (existsSync(gfDist)) {
+	const gf = readFileSync(gfDist, 'utf8');
+	ok(/isExpiredToken/.test(gf), 'GenericFunctions: isExpiredToken (499 envelope detector) missing');
+	ok(/freshSessionToken/.test(gf), 'GenericFunctions: freshSessionToken (499 auto-refresh) missing');
+	ok(/getConsultoriaLogin/.test(gf), 'GenericFunctions: refresh login must target getConsultoriaLogin');
+	ok(/'499'/.test(gf), 'GenericFunctions: must gate the refresh on the 499 message');
 }
 
 let coveredOps = 0;
