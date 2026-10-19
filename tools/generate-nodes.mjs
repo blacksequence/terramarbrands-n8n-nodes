@@ -433,6 +433,12 @@ const collectOps = () => {
 					accionMeta.enumValues = split.choices ?? SPLIT_ACTIONS.slice();
 					accionMeta.default = split.accion;
 					accionMeta.description = split.accionDescription ?? 'Acción de la solicitud';
+					// n8n's required validation treats a selected empty-string value as
+					// missing ("Parameter Accion is required"), so a split that offers
+					// the empty read value must not be required.
+					if ((split.choices ?? SPLIT_ACTIONS).includes('')) {
+						accionMeta.required = false;
+					}
 					(byTag[tag] ??= []).push(splitEntry);
 				}
 				continue;

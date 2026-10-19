@@ -263,6 +263,10 @@ for (const [tag, { className, name }] of Object.entries(TAG_NODES)) {
 						optValues.includes(''),
 						'readConsultantProfile.accion options must offer the empty (read) value',
 					);
+					ok(
+						!accion.required,
+						'readConsultantProfile.accion must not be required — n8n treats the selected empty value as missing and blocks execution',
+					);
 				}
 				ok(
 					!accion.noDataExpression,

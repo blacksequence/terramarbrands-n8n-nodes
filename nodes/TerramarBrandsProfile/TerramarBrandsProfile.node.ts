@@ -21,7 +21,7 @@ const OPS: Record<string, TerramarBrandsOpSpec> = {
 			dominio: ['Dominio', true],
 		},
 		body: {
-			accion: ['accion', true],
+			accion: ['accion', false],
 			usuarioOK: ['usuarioOK', true],
 		},
 		bodyJson: {},
@@ -303,7 +303,6 @@ export class TerramarBrandsProfile implements INodeType {
 				displayName: 'Accion',
 				name: 'accion',
 				type: 'options',
-				required: true,
 				description:
 					'Acción de la solicitud — vacío lee la ficha; CONTINUAR/TERMINAR avanzan o cierran el contrato',
 				displayOptions: {
