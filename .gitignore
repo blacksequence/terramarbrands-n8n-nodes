@@ -6,3 +6,6 @@ node_modules
 
 # senpi session artifacts
 .senpi/
+
+# local credentials (never commit)
+.env
